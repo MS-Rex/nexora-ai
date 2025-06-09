@@ -29,12 +29,18 @@ class ChatResponse(BaseModel):
     session_id: Optional[str] = Field(None, description="Session ID if provided")
 
 
-class HealthResponse(BaseModel):
-    """Health check response model."""
 
-    status: str = Field(..., description="Service health status")
-    service: str = Field(..., description="Service name")
-    version: str = Field(..., description="Service version")
+
+class EnhancedChatResponse(BaseModel):
+    """Enhanced response model with multi-agent metadata."""
+
+    response: str = Field(..., description="Agent's response message")
+    agent_name: str = Field(..., description="Name of the agent that responded")
+    intent: str = Field(..., description="Classified intent category")
+    agent_used: str = Field(..., description="Display name of the specialized agent used")
+    success: bool = Field(..., description="Whether the request was processed successfully")
+    error: Optional[str] = Field(None, description="Error message if processing failed")
     timestamp: datetime = Field(
-        default_factory=datetime.utcnow, description="Health check timestamp"
+        default_factory=datetime.utcnow, description="Response timestamp"
     )
+    session_id: Optional[str] = Field(None, description="Session ID if provided")
