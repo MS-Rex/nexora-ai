@@ -2,13 +2,17 @@ from fastapi import APIRouter, Depends, HTTPException
 from src.app.models.pydantic.chat import ChatRequest, ChatResponse, EnhancedChatResponse
 from src.app.agents.nexora_service import nexora_service
 from src.app.core.auth.api_auth import verify_api_key
+from src.app.core.database.connection import get_database_session
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
 
 router = APIRouter()
 
 @router.post("/chat", response_model=EnhancedChatResponse)
 async def enhanced_chat_with_agent(
-    request: ChatRequest, api_key: Annotated[str, Depends(verify_api_key)]
+    request: ChatRequest, 
+    api_key: Annotated[str, Depends(verify_api_key)],
+    db_session: AsyncSession = Depends(get_database_session)
 ) -> EnhancedChatResponse:
     """
     Enhanced chat endpoint with Nexora Campus Copilot.
@@ -21,11 +25,12 @@ async def enhanced_chat_with_agent(
     - Returns comprehensive response for campus-related queries
     """
     try:
-        # Process message through the orchestrator service
+        # Process message through the orchestrator service with conversation history
         result = await nexora_service.chat(
             message=request.message,
             user_id=request.user_id,
-            session_id=request.session_id
+            session_id=request.session_id,
+            db_session=db_session
         )
 
         # Return enhanced structured response

@@ -5,6 +5,7 @@ This module provides access to all data models used in the application.
 """
 
 from .pydantic import *
+from .database import Conversation, Message, Base
 
 __all__ = [
     # Re-export all pydantic models
@@ -14,4 +15,9 @@ __all__ = [
     "HealthResponse",
     "Department",
     "DepartmentResponse",
+    
+    # Database models
+    "Conversation",
+    "Message", 
+    "Base",
 ] 

@@ -1,8 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from src.app.api.v1.endpoints import chat, health
+from src.app.api.v1.endpoints import chat, health, conversations
 from src.app.core.config.settings import settings
+from src.app.core.database.connection import db_manager
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -12,11 +16,27 @@ async def lifespan(app: FastAPI):
     print(f"🚀 {settings.SERVICE_NAME} starting up...")
     print(f"📡 API available at /api/{settings.API_VERSION}")
     print(f"📖 Documentation at /docs")
+    
+    # Initialize database
+    try:
+        db_manager.initialize()
+        print("✅ Database connection initialized")
+    except Exception as e:
+        logger.error(f"❌ Failed to initialize database: {e}")
+        # You may want to raise this error to prevent startup if DB is critical
+        # raise
 
     yield
 
     # Shutdown
     print(f"🛑 {settings.SERVICE_NAME} shutting down...")
+    
+    # Close database connections
+    try:
+        await db_manager.close()
+        print("✅ Database connections closed")
+    except Exception as e:
+        logger.error(f"❌ Error closing database connections: {e}")
 
 
 # Create FastAPI app
@@ -42,6 +62,10 @@ app.include_router(chat.router, prefix=f"/api/{settings.API_VERSION}", tags=["Ch
 
 app.include_router(
     health.router, prefix=f"/api/{settings.API_VERSION}", tags=["Health"]
+)
+
+app.include_router(
+    conversations.router, prefix=f"/api/{settings.API_VERSION}", tags=["Conversations"]
 )
 
 

@@ -6,6 +6,7 @@ dist/
 wheels/
 *.egg-info
 src/app/agents/README.md
+alembic/env.py
 
 # Virtual environments
 .venv
