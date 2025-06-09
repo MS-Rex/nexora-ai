@@ -99,7 +99,8 @@ class AgentRouter:
             # Fallback to general agent with usage tracking
             try:
                 fallback_response = await self.agents["general"].chat(
-                    message, user_id, message_history=message_history, usage=usage
+                    message, user_id, message_history=message_history, usage=usage,
+                    http_client=self.http_client
                 )
                 return {
                     "response": fallback_response,
@@ -137,13 +138,15 @@ class AgentRouter:
             )
         elif intent == "general":
             return await self.agents["general"].chat(
-                message, user_id, message_history=message_history, usage=usage
+                message, user_id, message_history=message_history, usage=usage,
+                http_client=self.http_client
             )
         else:
             # Unknown intent, fallback to general
             logger.warning(f"Unknown intent {intent}, falling back to general agent")
             return await self.agents["general"].chat(
-                message, user_id, message_history=message_history, usage=usage
+                message, user_id, message_history=message_history, usage=usage,
+                http_client=self.http_client
             )
 
     def _get_agent_name(self, intent: str) -> str:

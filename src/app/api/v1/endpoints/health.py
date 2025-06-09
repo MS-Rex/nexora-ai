@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from src.app.schemas.chat import HealthResponse
+from src.app.models.pydantic.health import HealthResponse
 from src.app.core.config.settings import settings
 
 router = APIRouter()
