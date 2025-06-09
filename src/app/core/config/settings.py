@@ -1,4 +1,5 @@
 import os
+from functools import lru_cache
 from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import logfire
@@ -30,8 +31,12 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 
 
-# Global settings instance
-settings = Settings()
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
+
+settings = get_settings()
 logfire.configure(token=settings.LOGFIRE_TOKEN)
 logfire.instrument_openai()
 logfire.info('APP STARTED, {place}!', place='Nexora AI')

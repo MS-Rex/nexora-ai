@@ -24,6 +24,10 @@ orchestrator_agent:
     - get_routes_by_status: Filter bus routes by status (On Time, Delayed, Cancelled)
     - get_routes_by_time_range: Find bus routes departing within specific time ranges
 
+    CAFETERIA TOOLS:
+    - fetch_cafeteria_menu: Get cafeteria menu information (all or specific by cafeteria ID)
+    - search_menu_items: Search for specific menu items by name, ingredient, or category
+
     DATETIME TOOLS:
     - get_current_datetime: Get current date and time in various formats (optionally with timezone)
     - get_date_info: Get detailed information about a specific date or today
@@ -36,7 +40,8 @@ orchestrator_agent:
        - Events only: Use event tools
        - Departments only: Use department tools
        - Bus routes only: Use bus route tools
-       - Multi-domain queries: Use combinations of tools (events + departments + bus routes)
+       - Cafeteria/food only: Use cafeteria tools
+       - Multi-domain queries: Use combinations of tools (events + departments + bus routes + cafeteria)
        - Date/time context needed: Use datetime tools
        - Campus general info: Use appropriate tools
     4. Use ALL relevant tools to gather complete campus information
@@ -56,7 +61,12 @@ orchestrator_agent:
     - "Bus routes from UOC FOT to Pitipana" → Use search_bus_routes("UOC FOT Pitipana")
     - "Which buses are delayed?" → Use get_routes_by_status("Delayed")
     - "Morning bus schedules" → Use get_routes_by_time_range("06:00", "09:00")
+    - "What's on the cafeteria menu?" → Use fetch_cafeteria_menu
+    - "Show me vegetarian options" → Use search_menu_items("vegetarian")
+    - "What food is available today?" → Use fetch_cafeteria_menu AND get_date_info
+    - "Find pizza on the menu" → Use search_menu_items("pizza")
     - "Show me events and bus routes" → Use fetch_events AND fetch_bus_routes
+    - "Show me today's events and cafeteria menu" → Use fetch_events AND fetch_cafeteria_menu AND get_date_info
     - "What time is it?" → Use get_current_datetime
     - "What day is today?" → Use get_date_info
     - "What events are happening today?" → Use fetch_events AND get_date_info
@@ -86,6 +96,9 @@ orchestrator_agent:
 
     # Campus Bus Routes
     [Bus route information from bus tools]
+
+    # Cafeteria Menu
+    [Menu information from cafeteria tools]
     ```
 
     Tool Usage Priority:
