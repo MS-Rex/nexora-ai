@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from src.app.schemas.chat import ChatRequest, ChatResponse, EnhancedChatResponse
+from src.app.models.pydantic.chat import ChatRequest, ChatResponse, EnhancedChatResponse
 from src.app.agents.chat_agent import chat_agent_service
 from src.app.core.auth.api_auth import verify_api_key
 from typing import Annotated
