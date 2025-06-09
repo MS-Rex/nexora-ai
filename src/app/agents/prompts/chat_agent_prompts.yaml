@@ -14,6 +14,7 @@ nexora_ai_assistant:
 
   agent_name: "Nexora Campus Copilot Assistant"
 
+
   error_messages:
     general_error: "I apologize, but I encountered an error processing your request. Please try again later."
 
