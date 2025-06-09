@@ -130,18 +130,21 @@ class NexoraService:
                 user_id=user_id
             )
 
-            # Save user message
-            await conversation_service.save_user_message(
-                conversation_id=conversation.id,
-                content=message
-            )
-
-            # Get conversation history if not provided
+            # Get conversation history BEFORE saving current message (if not provided)
             if message_history is None:
                 message_history = await conversation_service.get_conversation_history(
                     session_id=session_id,
                     limit=20  # Limit to last 20 messages for context
                 )
+
+            # Log conversation context for debugging
+            logger.info(f"Session {session_id}: Processing message with {len(message_history)} previous messages in context")
+            
+            # Save user message AFTER retrieving history
+            await conversation_service.save_user_message(
+                conversation_id=conversation.id,
+                content=message
+            )
 
             # Let the orchestrator handle everything
             response = await self.orchestrator.handle_query(
@@ -221,13 +224,17 @@ class NexoraService:
                 "Department information", 
                 "Multi-domain campus queries",
                 "University-related questions only",
-                "Intelligent tool selection"
+                "Intelligent tool selection",
+                "Real-time date and time information"
             ],
             "available_tools": [
                 "fetch_events",
                 "search_events", 
                 "fetch_departments",
-                "search_departments"
+                "search_departments",
+                "get_current_datetime",
+                "get_date_info",
+                "get_time_info"
             ],
             "architecture": "Single Campus Copilot Agent with intelligent tool selection"
         }

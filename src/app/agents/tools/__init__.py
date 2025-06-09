@@ -9,6 +9,7 @@ and can be registered with agents or used directly.
 from .base import ToolDependencies, ToolError, HTTPToolError, handle_http_request
 from .department_tools import register_department_tools, DepartmentTools
 from .event_tools import register_event_tools, EventTools
+from .datetime_tools import register_datetime_tools, DateTimeTools
 
 __all__ = [
     # Base utilities
@@ -24,4 +25,8 @@ __all__ = [
     # Event tools
     "register_event_tools", 
     "EventTools",
+    
+    # DateTime tools
+    "register_datetime_tools",
+    "DateTimeTools",
 ] 
