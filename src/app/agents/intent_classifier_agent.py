@@ -10,8 +10,8 @@ logger = logging.getLogger(__name__)
 
 class RouterAgent:
     """Central Router Agent (Intention Classifier) serving as the main entry point for user queries.
-    
-    This agent is responsible for understanding the user's intent and dispatching the request 
+
+    This agent is responsible for understanding the user's intent and dispatching the request
     to the appropriate specialized agent according to the Nexora Campus Copilot methodology.
     """
 
@@ -19,8 +19,7 @@ class RouterAgent:
         """Initialize the router agent (intention classifier)."""
         self.agent = self._create_agent()
         self.agent_name = agent_prompts_loader.get_agent_name(
-            agent_type="intent_classifier", 
-            agent_name="intent_classifier"
+            agent_type="intent_classifier", agent_name="intent_classifier"
         )
 
     def _create_agent(self) -> Agent:
@@ -30,8 +29,7 @@ class RouterAgent:
         agent = Agent(
             model_name,
             instructions=agent_prompts_loader.get_system_instructions(
-                agent_type="intent_classifier", 
-                agent_name="intent_classifier"
+                agent_type="intent_classifier", agent_name="intent_classifier"
             ),
         )
 
@@ -63,7 +61,7 @@ class RouterAgent:
             # Pass usage to agent.run for proper tracking
             result = await self.agent.run(message, usage=usage)
             intent = result.output.strip().lower()
-            
+
             # Validate intent is one of our known categories for Nexora Campus Copilot
             # Currently implemented: Events Agent, General Chat
             # Future agents per methodology: Schedule Agent, Cafeteria Agent, Transport Agent
@@ -71,15 +69,17 @@ class RouterAgent:
             if intent in valid_intents:
                 return intent
             else:
-                logger.warning(f"Unknown intent classified: {intent}, defaulting to general")
+                logger.warning(
+                    f"Unknown intent classified: {intent}, defaulting to general"
+                )
                 return "general"
 
         except Exception as e:
             logger.error(f"Intent classification error: {str(e)}")
             return agent_prompts_loader.get_fallback_response(
-                "unknown_intent", 
-                agent_type="intent_classifier", 
-                agent_name="intent_classifier"
+                "unknown_intent",
+                agent_type="intent_classifier",
+                agent_name="intent_classifier",
             )
 
 
@@ -87,4 +87,4 @@ class RouterAgent:
 router_agent = RouterAgent()
 
 # Backward compatibility alias
-intent_classifier_agent = router_agent 
+intent_classifier_agent = router_agent

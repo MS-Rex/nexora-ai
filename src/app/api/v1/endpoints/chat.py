@@ -6,6 +6,7 @@ from typing import Annotated
 
 router = APIRouter()
 
+
 @router.post("/chat", response_model=EnhancedChatResponse)
 async def enhanced_chat_with_agent(
     request: ChatRequest, api_key: Annotated[str, Depends(verify_api_key)]

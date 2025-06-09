@@ -35,8 +35,12 @@ class EnhancedChatResponse(BaseModel):
     response: str = Field(..., description="Agent's response message")
     agent_name: str = Field(..., description="Name of the agent that responded")
     intent: str = Field(..., description="Classified intent category")
-    agent_used: str = Field(..., description="Display name of the specialized agent used")
-    success: bool = Field(..., description="Whether the request was processed successfully")
+    agent_used: str = Field(
+        ..., description="Display name of the specialized agent used"
+    )
+    success: bool = Field(
+        ..., description="Whether the request was processed successfully"
+    )
     error: Optional[str] = Field(None, description="Error message if processing failed")
     timestamp: datetime = Field(
         default_factory=datetime.utcnow, description="Response timestamp"

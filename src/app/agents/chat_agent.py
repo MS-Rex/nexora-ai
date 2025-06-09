@@ -40,11 +40,11 @@ class ChatAgentService:
             return "test"
 
     async def chat(
-        self, 
-        message: str, 
+        self,
+        message: str,
         user_id: Optional[str] = None,
         message_history: Optional[list[ModelMessage]] = None,
-        usage: Optional[Usage] = None
+        usage: Optional[Usage] = None,
     ) -> str:
         """
         Send a message to the agent and get a response.
@@ -63,9 +63,7 @@ class ChatAgentService:
         try:
             # Use PydanticAI patterns for message history and usage tracking
             result = await self.agent.run(
-                message,
-                message_history=message_history,
-                usage=usage
+                message, message_history=message_history, usage=usage
             )
 
             return result.output
@@ -76,7 +74,9 @@ class ChatAgentService:
             # Fallback response for errors
             return agent_prompts_loader.get_error_message("general_error")
 
-    async def chat_with_routing(self, message: str, user_id: Optional[str] = None) -> Dict[str, Any]:
+    async def chat_with_routing(
+        self, message: str, user_id: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
         Process a message through the multi-agent system with intent classification and routing.
 
@@ -89,7 +89,7 @@ class ChatAgentService:
         """
         # Import here to avoid circular imports
         from src.app.agents.agent_router import agent_router
-        
+
         return await agent_router.route_message(message, user_id)
 
 

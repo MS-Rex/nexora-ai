@@ -16,14 +16,13 @@ from .agent_router import AgentRouter, agent_router
 __all__ = [
     # Main service classes (Nexora Campus Copilot methodology)
     "ChatAgentService",
-    "RouterAgent",           # Central Router Agent (Intention Classifier)
-    "EventsAgent",           # Events Agent for campus events
+    "RouterAgent",  # Central Router Agent (Intention Classifier)
+    "EventsAgent",  # Events Agent for campus events
     "AgentRouter",
-    
     # Global instances
     "chat_agent_service",
-    "router_agent",          # New primary name following methodology
+    "router_agent",  # New primary name following methodology
     "intent_classifier_agent",  # Backward compatibility alias
-    "events_agent", 
+    "events_agent",
     "agent_router",
 ]
