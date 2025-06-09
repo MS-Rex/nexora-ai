@@ -9,6 +9,7 @@ from src.app.agents.tools.event_tools import register_event_tools
 from src.app.agents.tools.datetime_tools import register_datetime_tools
 from src.app.agents.tools.bus_tools import register_bus_tools
 from src.app.agents.tools.cafeteria_tools import register_cafeteria_tools
+from src.app.agents.tools.exam_tools import register_exam_tools
 from typing import Optional, Dict, Any
 import logging
 import httpx
@@ -20,7 +21,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class OrchestratorAgentDeps(ToolDependencies):
     """Dependencies for the Orchestrator Agent extending the base ToolDependencies."""
-    pass
+    user_id: Optional[str] = None
 
 
 class OrchestratorAgent:
@@ -28,8 +29,8 @@ class OrchestratorAgent:
     
     This agent replaces all specialized agents and routing logic. It has access to ALL tools
     and intelligently decides which tools to use based on the user's query. It can:
-    - Handle single-domain queries (events only, departments only, bus routes only, cafeteria menus only, general chat)
-    - Handle multi-domain queries (events + departments + bus routes + cafeteria, etc.)
+    - Handle single-domain queries (events only, departments only, bus routes only, cafeteria menus only, exam results only, general chat)
+    - Handle multi-domain queries (events + departments + bus routes + cafeteria + exam results, etc.)
     - Coordinate multiple tool calls and compose unified responses
     - Scale to new tools without architectural changes
     """
@@ -61,6 +62,7 @@ class OrchestratorAgent:
         register_datetime_tools(agent, OrchestratorAgentDeps)
         register_bus_tools(agent, OrchestratorAgentDeps)
         register_cafeteria_tools(agent, OrchestratorAgentDeps)
+        register_exam_tools(agent, OrchestratorAgentDeps)
         
         return agent
 
@@ -113,7 +115,8 @@ class OrchestratorAgent:
             # Create dependencies for the agent
             deps = OrchestratorAgentDeps(
                 http_client=http_client,
-                base_api_url=settings.BASE_URL
+                base_api_url=settings.BASE_URL,
+                user_id=user_id
             )
 
             # Let the agent analyze the query and use appropriate tools
