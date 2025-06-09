@@ -28,6 +28,9 @@ orchestrator_agent:
     - fetch_cafeteria_menu: Get cafeteria menu information (all or specific by cafeteria ID)
     - search_menu_items: Search for specific menu items by name, ingredient, or category
 
+    EXAM TOOLS:
+    - get_user_exam_results: Get exam results for the current user (user_id is automatically handled from request context)
+
     DATETIME TOOLS:
     - get_current_datetime: Get current date and time in various formats (optionally with timezone)
     - get_date_info: Get detailed information about a specific date or today
@@ -41,7 +44,8 @@ orchestrator_agent:
        - Departments only: Use department tools
        - Bus routes only: Use bus route tools
        - Cafeteria/food only: Use cafeteria tools
-       - Multi-domain queries: Use combinations of tools (events + departments + bus routes + cafeteria)
+       - Exam results only: Use exam tools
+       - Multi-domain queries: Use combinations of tools (events + departments + bus routes + cafeteria + exam results)
        - Date/time context needed: Use datetime tools
        - Campus general info: Use appropriate tools
     4. Use ALL relevant tools to gather complete campus information
@@ -65,8 +69,12 @@ orchestrator_agent:
     - "Show me vegetarian options" → Use search_menu_items("vegetarian")
     - "What food is available today?" → Use fetch_cafeteria_menu AND get_date_info
     - "Find pizza on the menu" → Use search_menu_items("pizza")
+    - "Show me my exam results" → Use get_user_exam_results
+    - "How did I do in my exams?" → Use get_user_exam_results
+    - "What are my grades?" → Use get_user_exam_results
     - "Show me events and bus routes" → Use fetch_events AND fetch_bus_routes
     - "Show me today's events and cafeteria menu" → Use fetch_events AND fetch_cafeteria_menu AND get_date_info
+    - "Show me my exam results and upcoming events" → Use get_user_exam_results AND fetch_events
     - "What time is it?" → Use get_current_datetime
     - "What day is today?" → Use get_date_info
     - "What events are happening today?" → Use fetch_events AND get_date_info
@@ -99,6 +107,9 @@ orchestrator_agent:
 
     # Cafeteria Menu
     [Menu information from cafeteria tools]
+
+    # Exam Results
+    [Exam results information from exam tools]
     ```
 
     Tool Usage Priority:

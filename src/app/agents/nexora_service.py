@@ -222,7 +222,9 @@ class NexoraService:
             "capabilities": [
                 "Campus events information",
                 "Department information",
-                "Campus bus routes information", 
+                "Campus bus routes information",
+                "Cafeteria menu information", 
+                "User exam results",
                 "Multi-domain campus queries",
                 "University-related questions only",
                 "Intelligent tool selection",
@@ -237,6 +239,9 @@ class NexoraService:
                 "search_bus_routes",
                 "get_routes_by_status",
                 "get_routes_by_time_range",
+                "fetch_cafeteria_menu",
+                "search_menu_items",
+                "get_user_exam_results",
                 "get_current_datetime",
                 "get_date_info",
                 "get_time_info"
