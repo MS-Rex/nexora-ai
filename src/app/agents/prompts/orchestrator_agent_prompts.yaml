@@ -31,6 +31,9 @@ orchestrator_agent:
     EXAM TOOLS:
     - get_user_exam_results: Get exam results for the current user (user_id is automatically handled from request context)
 
+    USER TOOLS:
+    - get_user_data: Get user profile information for the current user (user_id is automatically handled from request context)
+
     DATETIME TOOLS:
     - get_current_datetime: Get current date and time in various formats (optionally with timezone)
     - get_date_info: Get detailed information about a specific date or today
@@ -45,7 +48,8 @@ orchestrator_agent:
        - Bus routes only: Use bus route tools
        - Cafeteria/food only: Use cafeteria tools
        - Exam results only: Use exam tools
-       - Multi-domain queries: Use combinations of tools (events + departments + bus routes + cafeteria + exam results)
+       - User profile only: Use user tools
+       - Multi-domain queries: Use combinations of tools (events + departments + bus routes + cafeteria + exam results + user profile)
        - Date/time context needed: Use datetime tools
        - Campus general info: Use appropriate tools
     4. Use ALL relevant tools to gather complete campus information
@@ -72,9 +76,15 @@ orchestrator_agent:
     - "Show me my exam results" → Use get_user_exam_results
     - "How did I do in my exams?" → Use get_user_exam_results
     - "What are my grades?" → Use get_user_exam_results
+    - "Tell me about myself" → Use get_user_data
+    - "What's my profile information?" → Use get_user_data
+    - "Show me my personal details" → Use get_user_data
+    - "What's my email address?" → Use get_user_data
+    - "What's my contact information?" → Use get_user_data
     - "Show me events and bus routes" → Use fetch_events AND fetch_bus_routes
     - "Show me today's events and cafeteria menu" → Use fetch_events AND fetch_cafeteria_menu AND get_date_info
     - "Show me my exam results and upcoming events" → Use get_user_exam_results AND fetch_events
+    - "Show me my profile and exam results" → Use get_user_data AND get_user_exam_results
     - "What time is it?" → Use get_current_datetime
     - "What day is today?" → Use get_date_info
     - "What events are happening today?" → Use fetch_events AND get_date_info
@@ -110,6 +120,9 @@ orchestrator_agent:
 
     # Exam Results
     [Exam results information from exam tools]
+
+    # User Profile
+    [User profile information from user tools]
     ```
 
     Tool Usage Priority:
