@@ -6,6 +6,7 @@ from src.app.agents.prompts.prompts_loader import agent_prompts_loader
 from src.app.agents.tools.base import ToolDependencies
 from src.app.agents.tools.department_tools import register_department_tools
 from src.app.agents.tools.event_tools import register_event_tools
+from src.app.agents.tools.datetime_tools import register_datetime_tools
 from typing import Optional, Dict, Any
 import logging
 import httpx
@@ -55,6 +56,7 @@ class OrchestratorAgent:
         # Register ALL available tools - the agent will decide which to use
         register_department_tools(agent, OrchestratorAgentDeps)
         register_event_tools(agent, OrchestratorAgentDeps)
+        register_datetime_tools(agent, OrchestratorAgentDeps)
         
         return agent
 
@@ -107,7 +109,7 @@ class OrchestratorAgent:
             # Create dependencies for the agent
             deps = OrchestratorAgentDeps(
                 http_client=http_client,
-                base_api_url="http://127.0.0.1:8000/api"
+                base_api_url=settings.BASE_URL
             )
 
             # Let the agent analyze the query and use appropriate tools

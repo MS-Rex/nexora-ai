@@ -1,6 +1,7 @@
 import os
 from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
+import logfire
 
 
 class Settings(BaseSettings):
@@ -11,6 +12,9 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     API_VERSION: str = "v1"
 
+    # API Configuration
+    BASE_URL: str = "http://localhost:8000/api"  # Default fallback if not set in .env
+    
     # API Authentication
     API_KEY: str = "poc-key-123"
 
@@ -20,6 +24,7 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: Optional[str] = None
 
     # Logging
+    LOGFIRE_TOKEN: Optional[str] = None
     LOG_LEVEL: str = "INFO"
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
@@ -27,3 +32,6 @@ class Settings(BaseSettings):
 
 # Global settings instance
 settings = Settings()
+logfire.configure(token=settings.LOGFIRE_TOKEN)
+logfire.instrument_openai()
+logfire.info('APP STARTED, {place}!', place='Nexora AI')

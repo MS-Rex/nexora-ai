@@ -9,6 +9,7 @@ from typing import Protocol, Dict, Any, Optional
 import httpx
 import logging
 from dataclasses import dataclass
+from src.app.core.config.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 class ToolDependencies:
     """Common dependencies that tools might need."""
     http_client: httpx.AsyncClient
-    base_api_url: str = "http://127.0.0.1:8000/api"
+    base_api_url: str = settings.BASE_URL
 
 
 class ToolError(Exception):

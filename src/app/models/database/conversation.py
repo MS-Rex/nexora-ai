@@ -62,9 +62,9 @@ class Message(Base):
     
     def to_model_message(self):
         """Convert to pydantic_ai ModelMessage format for agent context."""
-        from pydantic_ai.messages import ModelMessage, UserMessage, AssistantMessage
+        from pydantic_ai.messages import ModelRequest, ModelResponse, UserPromptPart, TextPart
         
         if self.role == "user":
-            return UserMessage(content=self.content)
+            return ModelRequest(parts=[UserPromptPart(content=self.content)])
         else:
-            return AssistantMessage(content=self.content) 
+            return ModelResponse(parts=[TextPart(content=self.content)]) 

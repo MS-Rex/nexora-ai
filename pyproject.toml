@@ -17,4 +17,5 @@ dependencies = [
     "asyncpg>=0.29.0",
     "alembic>=1.13.1",
     "greenlet>=3.0.0",
+    "logfire>=3.18.0",
 ]
