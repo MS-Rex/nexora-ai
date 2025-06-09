@@ -1,29 +1,24 @@
 """
-Multi-agent system for Nexora Campus Copilot.
+Nexora Campus Copilot AI System.
 
-This module implements the scalable agentic architecture methodology with:
-- Central Router Agent (Intention Classifier) as main entry point
-- Specialized agents for campus services (Events Agent currently implemented)
-- Extensible router for adding future agents (Schedule, Cafeteria, Transport per methodology)
-- PydanticAI-based programmatic agent hand-off pattern
+SIMPLIFIED ARCHITECTURE:
+- Single Orchestrator Agent with intelligent tool selection
+- No complex routing or intent classification needed
+- Agent automatically selects appropriate tools based on query context
+- Handles single-domain, multi-domain, and general conversation seamlessly
+
+The orchestrator approach replaces the need for multiple specialized agents,
+intent classification, and complex routing logic with a single intelligent agent.
 """
 
-from .chat_agent import ChatAgentService, chat_agent_service
-from .intent_classifier_agent import RouterAgent, router_agent, intent_classifier_agent
-from .events_agent import EventsAgent, events_agent
-from .agent_router import AgentRouter, agent_router
+# Single Orchestrator Architecture
+from .orchestrator_agent import OrchestratorAgent, orchestrator_agent
+from .nexora_service import NexoraService, nexora_service
 
 __all__ = [
-    # Main service classes (Nexora Campus Copilot methodology)
-    "ChatAgentService",
-    "RouterAgent",           # Central Router Agent (Intention Classifier)
-    "EventsAgent",           # Events Agent for campus events
-    "AgentRouter",
-    
-    # Global instances
-    "chat_agent_service",
-    "router_agent",          # New primary name following methodology
-    "intent_classifier_agent",  # Backward compatibility alias
-    "events_agent", 
-    "agent_router",
+    # Orchestrator Agent (Main Components)
+    "OrchestratorAgent",     # Single agent with intelligent tool selection
+    "NexoraService",         # Simplified service interface
+    "orchestrator_agent",    # Global orchestrator instance
+    "nexora_service",        # Global service instance
 ]

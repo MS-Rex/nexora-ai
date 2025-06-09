@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from src.app.models.pydantic.chat import ChatRequest, ChatResponse, EnhancedChatResponse
-from src.app.agents.chat_agent import chat_agent_service
+from src.app.agents.nexora_service import nexora_service
 from src.app.core.auth.api_auth import verify_api_key
 from typing import Annotated
 
@@ -11,24 +11,28 @@ async def enhanced_chat_with_agent(
     request: ChatRequest, api_key: Annotated[str, Depends(verify_api_key)]
 ) -> EnhancedChatResponse:
     """
-    Enhanced chat endpoint with multi-agent routing and intent classification.
+    Enhanced chat endpoint with Nexora Campus Copilot.
 
     This endpoint:
     - Authenticates the request using API key
-    - Classifies user intent and routes to appropriate specialized agent
-    - Returns enhanced response with agent metadata and intent information
+    - Uses Nexora Campus Copilot to handle university and campus-related queries
+    - Automatically selects appropriate tools (events, departments, both, or none)
+    - Politely redirects non-university questions to campus topics
+    - Returns comprehensive response for campus-related queries
     """
     try:
-        # Process message through multi-agent router
-        result = await chat_agent_service.chat_with_routing(
-            message=request.message, user_id=request.user_id
+        # Process message through the orchestrator service
+        result = await nexora_service.chat(
+            message=request.message,
+            user_id=request.user_id,
+            session_id=request.session_id
         )
 
         # Return enhanced structured response
         return EnhancedChatResponse(
             response=result["response"],
-            agent_name="Nexora AI Assistant",  # Overall system name
-            intent=result["intent"],
+            agent_name="Nexora Campus Copilot",  # University-focused AI assistant
+            intent="campus",  # Single agent handles all campus-related intents
             agent_used=result["agent_used"],
             success=result["success"],
             error=result.get("error"),
