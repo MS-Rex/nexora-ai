@@ -29,6 +29,8 @@ class ChatResponse(BaseModel):
     session_id: Optional[str] = Field(None, description="Session ID if provided")
 
 
+
+
 class EnhancedChatResponse(BaseModel):
     """Enhanced response model with multi-agent metadata."""
 
@@ -42,14 +44,3 @@ class EnhancedChatResponse(BaseModel):
         default_factory=datetime.utcnow, description="Response timestamp"
     )
     session_id: Optional[str] = Field(None, description="Session ID if provided")
-
-
-class HealthResponse(BaseModel):
-    """Health check response model."""
-
-    status: str = Field(..., description="Service health status")
-    service: str = Field(..., description="Service name")
-    version: str = Field(..., description="Service version")
-    timestamp: datetime = Field(
-        default_factory=datetime.utcnow, description="Health check timestamp"
-    )
