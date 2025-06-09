@@ -7,6 +7,7 @@ from src.app.agents.tools.base import ToolDependencies
 from src.app.agents.tools.department_tools import register_department_tools
 from src.app.agents.tools.event_tools import register_event_tools
 from src.app.agents.tools.datetime_tools import register_datetime_tools
+from src.app.agents.tools.bus_tools import register_bus_tools
 from typing import Optional, Dict, Any
 import logging
 import httpx
@@ -26,8 +27,8 @@ class OrchestratorAgent:
     
     This agent replaces all specialized agents and routing logic. It has access to ALL tools
     and intelligently decides which tools to use based on the user's query. It can:
-    - Handle single-domain queries (events only, departments only, general chat)
-    - Handle multi-domain queries (events + departments, etc.)
+    - Handle single-domain queries (events only, departments only, bus routes only, general chat)
+    - Handle multi-domain queries (events + departments + bus routes, etc.)
     - Coordinate multiple tool calls and compose unified responses
     - Scale to new tools without architectural changes
     """
@@ -57,6 +58,7 @@ class OrchestratorAgent:
         register_department_tools(agent, OrchestratorAgentDeps)
         register_event_tools(agent, OrchestratorAgentDeps)
         register_datetime_tools(agent, OrchestratorAgentDeps)
+        register_bus_tools(agent, OrchestratorAgentDeps)
         
         return agent
 
@@ -82,7 +84,7 @@ class OrchestratorAgent:
         Handle any user query by intelligently selecting and using appropriate tools.
         
         The agent will analyze the query and automatically:
-        1. Determine which tools are needed (events, departments, both, or none)
+        1. Determine which tools are needed (events, departments, bus routes, or combinations)
         2. Make the necessary tool calls (potentially multiple, in parallel)
         3. Compose a unified, comprehensive response
         

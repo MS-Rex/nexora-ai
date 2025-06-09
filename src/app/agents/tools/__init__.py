@@ -10,6 +10,7 @@ from .base import ToolDependencies, ToolError, HTTPToolError, handle_http_reques
 from .department_tools import register_department_tools, DepartmentTools
 from .event_tools import register_event_tools, EventTools
 from .datetime_tools import register_datetime_tools, DateTimeTools
+from .bus_tools import register_bus_tools, BusTools
 
 __all__ = [
     # Base utilities
@@ -29,4 +30,8 @@ __all__ = [
     # DateTime tools
     "register_datetime_tools",
     "DateTimeTools",
+    
+    # Bus tools
+    "register_bus_tools",
+    "BusTools",
 ] 
