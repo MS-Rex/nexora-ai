@@ -19,6 +19,13 @@ class Settings(BaseSettings):
     # API Authentication
     API_KEY: str = "poc-key-123"
 
+    # Database Configuration
+    DB_HOST: str = "localhost"
+    DB_PORT: str = "5432"
+    DB_NAME: str = "nexora_ai"
+    DB_USER: str = "postgres"
+    DB_PASSWORD: str = "postgres"
+
     # AI Model Configuration
     OPENAI_API_KEY: Optional[str] = None
     ANTHROPIC_API_KEY: Optional[str] = None
