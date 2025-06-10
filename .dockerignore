@@ -1,0 +1,139 @@
+# Git
+.git
+.gitignore
+.github/
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env
+pip-log.txt
+pip-delete-this-directory.txt
+.tox
+.coverage
+.coverage.*
+.pytest_cache
+.cache
+.mypy_cache
+
+# Virtual environments
+.venv
+.env*
+venv/
+ENV/
+
+# IDE and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.vim/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# Logs
+*.log
+logs/
+
+# Documentation and development files
+docs/
+*.md
+!README.md
+
+# Tests
+tests/
+test_*
+*_test.py
+
+# Development and CI/CD
+.github/
+scripts/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+temp/
+
+# Database files (if any)
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment and configuration files
+.env
+.env.*
+!.env.example
+config/local.*
+secrets/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+
+# Docker files (prevent recursive copying)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Security and sensitive files
+*.key
+*.pem
+*.crt
+*.csr
+*.p12
+*.pfx
+id_rsa*
+id_dsa*
+*.ppk
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig
+
+# Package managers
+node_modules/
+bower_components/
+.npm/
+.yarn/
+
+# OS generated files
+.folder_trash
+.Trashes
+ehthumbs_vista.db
+
+# Large files that shouldn't be in containers
+*.iso
+*.dmg
+*.tar.gz
+*.zip
+*.rar
+
+# Runtime files
+*.pid
+*.lock
+!uv.lock
