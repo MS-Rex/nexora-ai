@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from src.app.api.v1.endpoints import chat, health, conversations
+from src.app.api.v1.endpoints import chat, health, conversations, voice
 from src.app.core.config.settings import settings
 from src.app.core.database.connection import db_manager
 import logging
@@ -66,6 +66,10 @@ app.include_router(
 
 app.include_router(
     conversations.router, prefix=f"/api/{settings.API_VERSION}", tags=["Conversations"]
+)
+
+app.include_router(
+    voice.router, prefix=f"/api/{settings.API_VERSION}", tags=["Voice"]
 )
 
 

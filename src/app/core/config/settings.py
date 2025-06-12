@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     API_VERSION: str = "v1"
 
     # API Configuration
-    BASE_URL: str = "http://localhost:8000/api"  # Default fallback if not set in .env
+    BASE_URL: str = "https://nexora.msanjana.com/api"  # Default fallback if not set in .env
     
     # API Authentication
     API_KEY: str = "poc-key-123"
