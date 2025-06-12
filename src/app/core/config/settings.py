@@ -14,8 +14,10 @@ class Settings(BaseSettings):
     API_VERSION: str = "v1"
 
     # API Configuration
-    BASE_URL: str = "https://nexora.msanjana.com/api"  # Default fallback if not set in .env
-    
+    BASE_URL: str = (
+        "https://nexora.msanjana.com/api"  # Default fallback if not set in .env
+    )
+
     # API Authentication
     API_KEY: str = "poc-key-123"
 
@@ -38,12 +40,12 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 
 
-
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
 
+
 settings = get_settings()
 logfire.configure(token=settings.LOGFIRE_TOKEN)
 logfire.instrument_openai()
-logfire.info('APP STARTED, {place}!', place='Nexora AI')
+logfire.info("APP STARTED, {place}!", place="Nexora AI")

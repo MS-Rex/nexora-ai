@@ -22,12 +22,13 @@ logger = logging.getLogger(__name__)
 @dataclass
 class OrchestratorAgentDeps(ToolDependencies):
     """Dependencies for the Orchestrator Agent extending the base ToolDependencies."""
+
     user_id: Optional[str] = None
 
 
 class OrchestratorAgent:
     """Single Orchestrator Agent for the Nexora Campus Copilot system.
-    
+
     This agent replaces all specialized agents and routing logic. It has access to ALL tools
     and intelligently decides which tools to use based on the user's query. It can:
     - Handle single-domain queries (events only, departments only, bus routes only, cafeteria menus only, exam results only, user profile only, general chat)
@@ -40,8 +41,7 @@ class OrchestratorAgent:
         """Initialize the orchestrator agent with ALL available tools."""
         self.agent = self._create_agent()
         self.agent_name = agent_prompts_loader.get_agent_name(
-            agent_type="orchestrator_agent", 
-            agent_name="orchestrator_agent"
+            agent_type="orchestrator_agent", agent_name="orchestrator_agent"
         )
 
     def _create_agent(self) -> Agent[OrchestratorAgentDeps]:
@@ -52,8 +52,7 @@ class OrchestratorAgent:
             model_name,
             deps_type=OrchestratorAgentDeps,
             instructions=agent_prompts_loader.get_system_instructions(
-                agent_type="orchestrator_agent", 
-                agent_name="orchestrator_agent"
+                agent_type="orchestrator_agent", agent_name="orchestrator_agent"
             ),
         )
 
@@ -65,7 +64,7 @@ class OrchestratorAgent:
         register_cafeteria_tools(agent, OrchestratorAgentDeps)
         register_exam_tools(agent, OrchestratorAgentDeps)
         register_user_tools(agent, OrchestratorAgentDeps)
-        
+
         return agent
 
     def _get_available_model(self) -> str:
@@ -79,21 +78,21 @@ class OrchestratorAgent:
             return "test"
 
     async def handle_query(
-        self, 
-        message: str, 
+        self,
+        message: str,
         user_id: Optional[str] = None,
         message_history: Optional[list[ModelMessage]] = None,
         usage: Optional[Usage] = None,
-        http_client: Optional[httpx.AsyncClient] = None
+        http_client: Optional[httpx.AsyncClient] = None,
     ) -> str:
         """
         Handle any user query by intelligently selecting and using appropriate tools.
-        
+
         The agent will analyze the query and automatically:
         1. Determine which tools are needed (events, departments, bus routes, or combinations)
         2. Make the necessary tool calls (potentially multiple, in parallel)
         3. Compose a unified, comprehensive response
-        
+
         This replaces the need for intent classification and agent routing.
 
         Args:
@@ -116,17 +115,12 @@ class OrchestratorAgent:
         try:
             # Create dependencies for the agent
             deps = OrchestratorAgentDeps(
-                http_client=http_client,
-                base_api_url=settings.BASE_URL,
-                user_id=user_id
+                http_client=http_client, base_api_url=settings.BASE_URL, user_id=user_id
             )
 
             # Let the agent analyze the query and use appropriate tools
             result = await self.agent.run(
-                message,
-                deps=deps,
-                message_history=message_history,
-                usage=usage
+                message, deps=deps, message_history=message_history, usage=usage
             )
 
             return result.output
@@ -134,9 +128,9 @@ class OrchestratorAgent:
         except Exception as e:
             logger.error(f"Orchestrator agent error for user {user_id}: {str(e)}")
             return agent_prompts_loader.get_error_message(
-                "general_error", 
-                agent_type="orchestrator_agent", 
-                agent_name="orchestrator_agent"
+                "general_error",
+                agent_type="orchestrator_agent",
+                agent_name="orchestrator_agent",
             )
         finally:
             # Close the client if we created it
@@ -145,4 +139,4 @@ class OrchestratorAgent:
 
 
 # Global orchestrator agent instance
-orchestrator_agent = OrchestratorAgent() 
+orchestrator_agent = OrchestratorAgent()

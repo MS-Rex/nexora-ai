@@ -10,4 +10,4 @@ class HealthResponse(BaseModel):
     version: str = Field(..., description="Service version")
     timestamp: datetime = Field(
         default_factory=datetime.utcnow, description="Health check timestamp"
-    ) 
+    )

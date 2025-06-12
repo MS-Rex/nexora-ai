@@ -5,7 +5,7 @@ from datetime import datetime
 
 class Department(BaseModel):
     """Model for department data structure."""
-    
+
     id: int
     name: str
     description: str
@@ -15,8 +15,8 @@ class Department(BaseModel):
 
 class DepartmentResponse(BaseModel):
     """Response model for department API calls."""
-    
+
     departments: list[Department]
     total_count: int
     success: bool = True
-    error: Optional[str] = None 
+    error: Optional[str] = None

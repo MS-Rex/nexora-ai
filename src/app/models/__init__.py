@@ -10,14 +10,13 @@ from .database import Conversation, Message, Base
 __all__ = [
     # Re-export all pydantic models
     "ChatRequest",
-    "ChatResponse", 
+    "ChatResponse",
     "EnhancedChatResponse",
     "HealthResponse",
     "Department",
     "DepartmentResponse",
-    
     # Database models
     "Conversation",
-    "Message", 
+    "Message",
     "Base",
-] 
+]

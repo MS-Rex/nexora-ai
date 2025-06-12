@@ -17,8 +17,8 @@ from .nexora_service import NexoraService, nexora_service
 
 __all__ = [
     # Orchestrator Agent (Main Components)
-    "OrchestratorAgent",     # Single agent with intelligent tool selection
-    "NexoraService",         # Simplified service interface
-    "orchestrator_agent",    # Global orchestrator instance
-    "nexora_service",        # Global service instance
+    "OrchestratorAgent",  # Single agent with intelligent tool selection
+    "NexoraService",  # Simplified service interface
+    "orchestrator_agent",  # Global orchestrator instance
+    "nexora_service",  # Global service instance
 ]

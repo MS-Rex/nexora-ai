@@ -13,20 +13,20 @@ router = APIRouter()
 
 class ConnectionManager:
     """Manage WebSocket connections"""
-    
+
     def __init__(self):
         self.active_connections: Dict[str, WebSocket] = {}
-    
+
     async def connect(self, websocket: WebSocket, client_id: str):
         await websocket.accept()
         self.active_connections[client_id] = websocket
         logger.info(f"🔗 Client {client_id} connected")
-    
+
     def disconnect(self, client_id: str):
         if client_id in self.active_connections:
             del self.active_connections[client_id]
             logger.info(f"❌ Client {client_id} disconnected")
-    
+
     async def send_message(self, client_id: str, message: Dict[str, Any]):
         if client_id in self.active_connections:
             try:
@@ -43,7 +43,7 @@ manager = ConnectionManager()
 async def voice_chat_websocket(websocket: WebSocket, client_id: str):
     """
     WebSocket endpoint for real-time voice-to-voice communication
-    
+
     Message format:
     {
         "type": "audio_chunk",
@@ -52,7 +52,7 @@ async def voice_chat_websocket(websocket: WebSocket, client_id: str):
         "sample_rate": 44100,
         "channels": 1
     }
-    
+
     Response format:
     {
         "type": "transcription" | "response_audio" | "error",
@@ -62,28 +62,27 @@ async def voice_chat_websocket(websocket: WebSocket, client_id: str):
     }
     """
     await manager.connect(websocket, client_id)
-    
+
     try:
         while True:
             # Receive message from client
             data = await websocket.receive_text()
-            
+
             try:
                 message = json.loads(data)
                 await process_voice_message(websocket, client_id, message)
-                
+
             except json.JSONDecodeError:
-                await manager.send_message(client_id, {
-                    "type": "error",
-                    "message": "Invalid JSON format"
-                })
+                await manager.send_message(
+                    client_id, {"type": "error", "message": "Invalid JSON format"}
+                )
             except Exception as e:
                 logger.error(f"❌ Error processing message from {client_id}: {e}")
-                await manager.send_message(client_id, {
-                    "type": "error",
-                    "message": f"Error processing message: {str(e)}"
-                })
-                
+                await manager.send_message(
+                    client_id,
+                    {"type": "error", "message": f"Error processing message: {str(e)}"},
+                )
+
     except WebSocketDisconnect:
         manager.disconnect(client_id)
     except Exception as e:
@@ -91,81 +90,82 @@ async def voice_chat_websocket(websocket: WebSocket, client_id: str):
         manager.disconnect(client_id)
 
 
-async def process_voice_message(websocket: WebSocket, client_id: str, message: Dict[str, Any]):
+async def process_voice_message(
+    websocket: WebSocket, client_id: str, message: Dict[str, Any]
+):
     """Process incoming voice message"""
     message_type = message.get("type")
-    
+
     if message_type == "audio_chunk":
         await handle_audio_chunk(websocket, client_id, message)
     elif message_type == "ping":
         await manager.send_message(client_id, {"type": "pong"})
     else:
-        await manager.send_message(client_id, {
-            "type": "error",
-            "message": f"Unknown message type: {message_type}"
-        })
+        await manager.send_message(
+            client_id,
+            {"type": "error", "message": f"Unknown message type: {message_type}"},
+        )
 
 
-async def handle_audio_chunk(websocket: WebSocket, client_id: str, message: Dict[str, Any]):
+async def handle_audio_chunk(
+    websocket: WebSocket, client_id: str, message: Dict[str, Any]
+):
     """Handle audio chunk processing"""
     try:
         # Extract audio data
         audio_data_b64 = message.get("data")
         if not audio_data_b64:
-            await manager.send_message(client_id, {
-                "type": "error",
-                "message": "No audio data provided"
-            })
+            await manager.send_message(
+                client_id, {"type": "error", "message": "No audio data provided"}
+            )
             return
-        
+
         # Decode base64 audio data
         try:
             audio_bytes = base64.b64decode(audio_data_b64)
         except Exception as e:
-            await manager.send_message(client_id, {
-                "type": "error",
-                "message": f"Invalid base64 audio data: {str(e)}"
-            })
+            await manager.send_message(
+                client_id,
+                {"type": "error", "message": f"Invalid base64 audio data: {str(e)}"},
+            )
             return
-        
-        logger.info(f"🎤 Processing audio chunk from {client_id} ({len(audio_bytes)} bytes)")
-        
+
+        logger.info(
+            f"🎤 Processing audio chunk from {client_id} ({len(audio_bytes)} bytes)"
+        )
+
         # Send acknowledgment
-        await manager.send_message(client_id, {
-            "type": "processing",
-            "message": "Processing your voice message..."
-        })
-        
+        await manager.send_message(
+            client_id,
+            {"type": "processing", "message": "Processing your voice message..."},
+        )
+
         # Process voice message through the pipeline with client_id as user_id
-        transcribed_text, response_audio = await voice_service.process_voice_message(audio_bytes, user_id=client_id)
-        
+        transcribed_text, response_audio = await voice_service.process_voice_message(
+            audio_bytes, user_id=client_id
+        )
+
         # Send transcription result
         if transcribed_text:
-            await manager.send_message(client_id, {
-                "type": "transcription",
-                "text": transcribed_text
-            })
-        
+            await manager.send_message(
+                client_id, {"type": "transcription", "text": transcribed_text}
+            )
+
         # Send response audio
         if response_audio:
-            response_audio_b64 = base64.b64encode(response_audio).decode('utf-8')
-            await manager.send_message(client_id, {
-                "type": "response_audio",
-                "data": response_audio_b64,
-                "format": "mp3"
-            })
-        
+            response_audio_b64 = base64.b64encode(response_audio).decode("utf-8")
+            await manager.send_message(
+                client_id,
+                {"type": "response_audio", "data": response_audio_b64, "format": "mp3"},
+            )
+
         logger.info(f"✅ Voice processing completed for {client_id}")
-        
+
     except Exception as e:
         logger.error(f"❌ Error handling audio chunk for {client_id}: {e}")
-        await manager.send_message(client_id, {
-            "type": "error",
-            "message": f"Error processing audio: {str(e)}"
-        })
-
-
-
+        await manager.send_message(
+            client_id, {"type": "error", "message": f"Error processing audio: {str(e)}"}
+        )
 
 
 @router.get("/voice-status")
@@ -175,10 +175,11 @@ async def voice_status():
         return {
             "status": "active",
             "whisper_loaded": voice_service.whisper_model is not None,
-            "orchestrator_agent_configured": voice_service.orchestrator_agent is not None,
+            "orchestrator_agent_configured": voice_service.orchestrator_agent
+            is not None,
             "active_connections": len(manager.active_connections),
-            "message": "Voice-to-voice service is running with OrchestratorAgent"
+            "message": "Voice-to-voice service is running with OrchestratorAgent",
         }
     except Exception as e:
         logger.error(f"❌ Error getting voice status: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) 
+        raise HTTPException(status_code=500, detail=str(e))

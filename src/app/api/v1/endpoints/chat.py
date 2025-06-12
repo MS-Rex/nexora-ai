@@ -8,11 +8,12 @@ from typing import Annotated
 
 router = APIRouter()
 
+
 @router.post("/chat", response_model=EnhancedChatResponse)
 async def enhanced_chat_with_agent(
-    request: ChatRequest, 
+    request: ChatRequest,
     api_key: Annotated[str, Depends(verify_api_key)],
-    db_session: AsyncSession = Depends(get_database_session)
+    db_session: AsyncSession = Depends(get_database_session),
 ) -> EnhancedChatResponse:
     """
     Enhanced chat endpoint with Nexora Campus Copilot.
@@ -30,7 +31,7 @@ async def enhanced_chat_with_agent(
             message=request.message,
             user_id=request.user_id,
             session_id=request.session_id,
-            db_session=db_session
+            db_session=db_session,
         )
 
         # Return enhanced structured response

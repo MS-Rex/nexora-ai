@@ -16,7 +16,7 @@ async def lifespan(app: FastAPI):
     print(f"🚀 {settings.SERVICE_NAME} starting up...")
     print(f"📡 API available at /api/{settings.API_VERSION}")
     print(f"📖 Documentation at /docs")
-    
+
     # Initialize database
     try:
         db_manager.initialize()
@@ -30,7 +30,7 @@ async def lifespan(app: FastAPI):
 
     # Shutdown
     print(f"🛑 {settings.SERVICE_NAME} shutting down...")
-    
+
     # Close database connections
     try:
         await db_manager.close()
@@ -68,9 +68,7 @@ app.include_router(
     conversations.router, prefix=f"/api/{settings.API_VERSION}", tags=["Conversations"]
 )
 
-app.include_router(
-    voice.router, prefix=f"/api/{settings.API_VERSION}", tags=["Voice"]
-)
+app.include_router(voice.router, prefix=f"/api/{settings.API_VERSION}", tags=["Voice"])
 
 
 # Root endpoint

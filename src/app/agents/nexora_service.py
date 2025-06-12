@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class NexoraService:
     """Simplified Nexora Campus Copilot service using a single Orchestrator Agent.
-    
+
     This replaces the complex multi-agent routing system with a single intelligent agent
     that can handle any query type by selecting appropriate tools.
     """
@@ -25,24 +25,24 @@ class NexoraService:
         self.service_name = "Nexora Campus Copilot"
 
     async def chat(
-        self, 
-        message: str, 
+        self,
+        message: str,
         user_id: Optional[str] = None,
         session_id: Optional[str] = None,
         message_history: Optional[list[ModelMessage]] = None,
         usage: Optional[Usage] = None,
         http_client: Optional[httpx.AsyncClient] = None,
-        db_session: Optional[AsyncSession] = None
+        db_session: Optional[AsyncSession] = None,
     ) -> Dict[str, Any]:
         """
         Process any user message using the orchestrator agent with conversation history.
-        
+
         The orchestrator will automatically:
         1. Analyze the query to determine what information is needed
         2. Select and use appropriate tools (events, departments, both, or none)
         3. Compose a comprehensive response
         4. Save conversation history to database
-        
+
         No intent classification or agent routing needed!
 
         Args:
@@ -71,29 +71,42 @@ class NexoraService:
         # Generate session_id if not provided
         if session_id is None:
             from uuid import uuid4
+
             session_id = str(uuid4())
 
         start_time = time.time()
-        
+
         try:
             # Get or create database session for conversation history
             if db_session is None:
                 async for session in get_database_session():
                     conversation_service = ConversationService(session)
                     return await self._process_with_history(
-                        conversation_service, message, user_id, session_id,
-                        message_history, usage, http_client, start_time
+                        conversation_service,
+                        message,
+                        user_id,
+                        session_id,
+                        message_history,
+                        usage,
+                        http_client,
+                        start_time,
                     )
             else:
                 conversation_service = ConversationService(db_session)
                 return await self._process_with_history(
-                    conversation_service, message, user_id, session_id,
-                    message_history, usage, http_client, start_time
+                    conversation_service,
+                    message,
+                    user_id,
+                    session_id,
+                    message_history,
+                    usage,
+                    http_client,
+                    start_time,
                 )
 
         except Exception as e:
             logger.error(f"Nexora service error for user {user_id}: {str(e)}")
-            
+
             return {
                 "response": "I apologize, but I'm experiencing technical difficulties. Please try again later.",
                 "agent_used": "Nexora Campus Copilot",
@@ -102,9 +115,9 @@ class NexoraService:
                 "error": str(e),
                 "user_id": user_id,
                 "session_id": session_id,
-                "usage": usage.dict() if hasattr(usage, 'dict') else str(usage)
+                "usage": usage.dict() if hasattr(usage, "dict") else str(usage),
             }
-        
+
         finally:
             # Close the client if we created it
             if should_close_client:
@@ -119,31 +132,31 @@ class NexoraService:
         message_history: Optional[list[ModelMessage]],
         usage: Usage,
         http_client: httpx.AsyncClient,
-        start_time: float
+        start_time: float,
     ) -> Dict[str, Any]:
         """Process message with conversation history management."""
-        
+
         try:
             # Get or create conversation
             conversation = await conversation_service.get_or_create_conversation(
-                session_id=session_id,
-                user_id=user_id
+                session_id=session_id, user_id=user_id
             )
 
             # Get conversation history BEFORE saving current message (if not provided)
             if message_history is None:
                 message_history = await conversation_service.get_conversation_history(
                     session_id=session_id,
-                    limit=20  # Limit to last 20 messages for context
+                    limit=20,  # Limit to last 20 messages for context
                 )
 
             # Log conversation context for debugging
-            logger.info(f"Session {session_id}: Processing message with {len(message_history)} previous messages in context")
-            
+            logger.info(
+                f"Session {session_id}: Processing message with {len(message_history)} previous messages in context"
+            )
+
             # Save user message AFTER retrieving history
             await conversation_service.save_user_message(
-                conversation_id=conversation.id,
-                content=message
+                conversation_id=conversation.id, content=message
             )
 
             # Let the orchestrator handle everything
@@ -152,7 +165,7 @@ class NexoraService:
                 user_id=user_id,
                 message_history=message_history,
                 usage=usage,
-                http_client=http_client
+                http_client=http_client,
             )
 
             # Calculate response time
@@ -166,8 +179,10 @@ class NexoraService:
                 agent_used="Nexora Campus Copilot",
                 intent="campus",
                 success=True,
-                usage_data=usage.dict() if hasattr(usage, 'dict') else {"usage": str(usage)},
-                response_time_ms=response_time_ms
+                usage_data=(
+                    usage.dict() if hasattr(usage, "dict") else {"usage": str(usage)}
+                ),
+                response_time_ms=response_time_ms,
             )
 
             return {
@@ -178,18 +193,18 @@ class NexoraService:
                 "user_id": user_id,
                 "session_id": session_id,
                 "conversation_id": conversation.id,
-                "usage": usage.dict() if hasattr(usage, 'dict') else str(usage),
-                "response_time_ms": response_time_ms
+                "usage": usage.dict() if hasattr(usage, "dict") else str(usage),
+                "response_time_ms": response_time_ms,
             }
 
         except Exception as e:
             logger.error(f"Error processing message with history: {str(e)}")
-            
+
             # Try to save error message if we have conversation
             try:
                 response_time_ms = int((time.time() - start_time) * 1000)
                 error_response = "I apologize, but I'm experiencing technical difficulties. Please try again later."
-                
+
                 await conversation_service.save_assistant_message(
                     conversation_id=conversation.id,
                     content=error_response,
@@ -198,11 +213,11 @@ class NexoraService:
                     intent="error",
                     success=False,
                     error_message=str(e),
-                    response_time_ms=response_time_ms
+                    response_time_ms=response_time_ms,
                 )
             except:
                 pass  # Don't let saving error fail the response
-            
+
             return {
                 "response": "I apologize, but I'm experiencing technical difficulties. Please try again later.",
                 "agent_used": "Nexora Campus Copilot",
@@ -211,7 +226,7 @@ class NexoraService:
                 "error": str(e),
                 "user_id": user_id,
                 "session_id": session_id,
-                "usage": usage.dict() if hasattr(usage, 'dict') else str(usage)
+                "usage": usage.dict() if hasattr(usage, "dict") else str(usage),
             }
 
     async def get_service_info(self) -> Dict[str, Any]:
@@ -223,17 +238,17 @@ class NexoraService:
                 "Campus events information",
                 "Department information",
                 "Campus bus routes information",
-                "Cafeteria menu information", 
+                "Cafeteria menu information",
                 "User exam results",
                 "User profile information",
                 "Multi-domain campus queries",
                 "University-related questions only",
                 "Intelligent tool selection",
-                "Real-time date and time information"
+                "Real-time date and time information",
             ],
             "available_tools": [
                 "fetch_events",
-                "search_events", 
+                "search_events",
                 "fetch_departments",
                 "search_departments",
                 "fetch_bus_routes",
@@ -246,11 +261,11 @@ class NexoraService:
                 "get_user_data",
                 "get_current_datetime",
                 "get_date_info",
-                "get_time_info"
+                "get_time_info",
             ],
-            "architecture": "Single Campus Copilot Agent with intelligent tool selection"
+            "architecture": "Single Campus Copilot Agent with intelligent tool selection",
         }
 
 
 # Global service instance
-nexora_service = NexoraService() 
+nexora_service = NexoraService()

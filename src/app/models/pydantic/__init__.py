@@ -12,13 +12,11 @@ from .department import Department, DepartmentResponse
 __all__ = [
     # Chat models
     "ChatRequest",
-    "ChatResponse", 
+    "ChatResponse",
     "EnhancedChatResponse",
-    
     # Health models
     "HealthResponse",
-    
     # Department models
     "Department",
     "DepartmentResponse",
-] 
+]
