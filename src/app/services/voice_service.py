@@ -3,6 +3,7 @@ import io
 import tempfile
 import asyncio
 import logging
+import re
 from typing import Optional, Tuple
 import numpy as np
 import whisper
@@ -186,6 +187,11 @@ class VoiceService:
             Audio bytes in MP3 format
         """
         try:
+            # Detect if text likely contains markdown and clean it if needed
+            if any(marker in text for marker in ['#', '```', '`', '*', '_', '[', ']', '->']):
+                logger.info("📝 Detected markdown in text for speech, cleaning...")
+                text = self._clean_markdown_for_speech(text)
+            
             # Create gTTS object
             tts = gTTS(text=text, lang=language, slow=False)
             
@@ -264,6 +270,52 @@ class VoiceService:
             logger.error(f"Full traceback: {traceback.format_exc()}")
             return audio_chunk
     
+    def _clean_markdown_for_speech(self, text: str) -> str:
+        """
+        Clean markdown formatting for better speech synthesis
+        
+        Args:
+            text: Text that may contain markdown formatting
+            
+        Returns:
+            Cleaned text suitable for speech synthesis
+        """
+        # Remove code blocks (```...```)
+        text = re.sub(r'```[\s\S]*?```', '', text)
+        
+        # Remove inline code blocks (`...`)
+        text = re.sub(r'`([^`]*)`', r'\1', text)
+        
+        # Remove headers (# Header)
+        text = re.sub(r'^\s*#{1,6}\s+(.*?)$', r'\1', text, flags=re.MULTILINE)
+        
+        # Convert links [text](url) to just text
+        text = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', text)
+        
+        # Remove bold and italic markers
+        text = re.sub(r'\*\*(.*?)\*\*', r'\1', text)
+        text = re.sub(r'__(.*?)__', r'\1', text)
+        text = re.sub(r'\*(.*?)\*', r'\1', text)
+        text = re.sub(r'_(.*?)_', r'\1', text)
+        
+        # Remove bullet points and numbered lists
+        text = re.sub(r'^\s*[-*+]\s+', '', text, flags=re.MULTILINE)
+        text = re.sub(r'^\s*\d+\.\s+', '', text, flags=re.MULTILINE)
+        
+        # Remove horizontal rules
+        text = re.sub(r'^\s*[-*_]{3,}\s*$', '', text, flags=re.MULTILINE)
+        
+        # Remove HTML tags
+        text = re.sub(r'<[^>]*>', '', text)
+        
+        # Remove blockquote markers
+        text = re.sub(r'^\s*>\s+', '', text, flags=re.MULTILINE)
+        
+        # Collapse multiple blank lines
+        text = re.sub(r'\n{3,}', '\n\n', text)
+        
+        return text.strip()
+
     async def process_voice_message(self, audio_data: bytes, user_id: Optional[str] = None) -> Tuple[str, bytes]:
         """
         Complete voice-to-voice processing pipeline
@@ -298,9 +350,13 @@ class VoiceService:
             logger.info("📝 Step 3: Generating AI response via OrchestratorAgent...")
             response_text = await self.generate_response(transcribed_text, user_id)
             
+            # Clean markdown from response text for voice output only
+            cleaned_response_text = self._clean_markdown_for_speech(response_text)
+            logger.info(f"✅ Cleaned markdown for speech: original length {len(response_text)}, cleaned length {len(cleaned_response_text)}")
+            
             # Step 4: Convert response to speech
             logger.info("📝 Step 4: Converting response to speech...")
-            response_audio = await self.text_to_speech(response_text)
+            response_audio = await self.text_to_speech(cleaned_response_text)
             
             logger.info("🎉 Voice processing pipeline completed successfully!")
             return transcribed_text, response_audio
