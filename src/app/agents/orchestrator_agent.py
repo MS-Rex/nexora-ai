@@ -11,6 +11,7 @@ from src.app.agents.tools.bus_tools import register_bus_tools
 from src.app.agents.tools.cafeteria_tools import register_cafeteria_tools
 from src.app.agents.tools.exam_tools import register_exam_tools
 from src.app.agents.tools.user_tools import register_user_tools
+from src.app.agents.tools.rag_tools import register_rag_tools
 from typing import Optional, Dict, Any
 import logging
 import httpx
@@ -33,6 +34,7 @@ class OrchestratorAgent:
     and intelligently decides which tools to use based on the user's query. It can:
     - Handle single-domain queries (events only, departments only, bus routes only, cafeteria menus only, exam results only, user profile only, general chat)
     - Handle multi-domain queries (events + departments + bus routes + cafeteria + exam results + user profile, etc.)
+    - Handle knowledge-based queries using the RAG system
     - Coordinate multiple tool calls and compose unified responses
     - Scale to new tools without architectural changes
     """
@@ -64,6 +66,7 @@ class OrchestratorAgent:
         register_cafeteria_tools(agent, OrchestratorAgentDeps)
         register_exam_tools(agent, OrchestratorAgentDeps)
         register_user_tools(agent, OrchestratorAgentDeps)
+        register_rag_tools(agent, OrchestratorAgentDeps)
 
         return agent
 

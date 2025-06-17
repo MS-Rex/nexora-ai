@@ -32,6 +32,16 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: Optional[str] = None
     ANTHROPIC_API_KEY: Optional[str] = None
     GEMINI_API_KEY: Optional[str] = None
+    GROQ_API_KEY: Optional[str] = None
+
+    # RAG Configuration
+    KNOWLEDGE_BASE_PATH: str = "./knowledge_base"
+    VECTOR_DB_PATH: str = "./storage/vector_db"
+    RAG_TABLE_NAME: str = "nexora_knowledge"
+    RAG_CHUNK_SIZE: int = 8192
+    RAG_SIMILARITY_THRESHOLD: float = 0.7
+    RAG_MAX_RESULTS: int = 10
+    EMBEDDING_MODEL: str = "text-embedding-3-small"
 
     # Logging
     LOGFIRE_TOKEN: Optional[str] = None

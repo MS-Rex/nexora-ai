@@ -11,3 +11,49 @@ alembic/env.py
 # Virtual environments
 .venv
 .env
+
+# RAG and Vector Database files
+storage/vector_db/
+*.lance
+*.lance.*
+db/
+*.db
+*.sqlite
+*.sqlite3
+
+# LanceDB and Vector Database cache
+.lancedb/
+lance_cache/
+
+# RAG temporary files
+*_temp.md
+*_temp.txt
+rag_test_*
+test_rag_*
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp

@@ -46,3 +46,13 @@ class EnhancedChatResponse(BaseModel):
         default_factory=datetime.utcnow, description="Response timestamp"
     )
     session_id: Optional[str] = Field(None, description="Session ID if provided")
+    # Moderation fields
+    moderated: bool = Field(
+        default=False, description="Whether content was checked by moderation"
+    )
+    content_flagged: bool = Field(
+        default=False, description="Whether the input content was flagged as inappropriate"
+    )
+    moderation_reason: Optional[str] = Field(
+        None, description="Reason for content flagging if applicable"
+    )

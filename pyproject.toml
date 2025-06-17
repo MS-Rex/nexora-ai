@@ -27,4 +27,11 @@ dependencies = [
     "torch>=2.0.0",
     "librosa>=0.10.0",
     "soundfile>=0.12.1",
+    # RAG Dependencies
+    "lancedb>=0.17.0",
+    "tiktoken>=0.8.0",
+    "pyarrow>=17.0.0",
+    "pandas>=2.0.0",
+    "tantivy>=0.19.0",
+    "pylance>=0.2.0",
 ]
