@@ -32,7 +32,7 @@ class VoiceService:
         try:
             # Load Whisper model (using base model for balance of speed/accuracy)
             logger.info("Loading Whisper model...")
-            self.whisper_model = whisper.load_model("base")
+            self.whisper_model = whisper.load_model("small")
             logger.info("✅ Whisper model loaded successfully")
 
             # Check if orchestrator agent is available

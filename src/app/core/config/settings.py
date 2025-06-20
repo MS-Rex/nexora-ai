@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     RAG_CHUNK_SIZE: int = 8192
     RAG_SIMILARITY_THRESHOLD: float = 0.7
     RAG_MAX_RESULTS: int = 10
-    EMBEDDING_MODEL: str = "text-embedding-3-small"
+    EMBEDDING_MODEL: str = "text-embedding-3-large"
 
     # Logging
     LOGFIRE_TOKEN: Optional[str] = None
