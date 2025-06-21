@@ -95,6 +95,40 @@ def retrive_similar_docs(
     return results
 
 
+def retrive_similar_docs_optimized(
+    table: LanceTable,
+    query: str,
+    query_type: str = "vector",
+    limit: int = 15,
+    similarity_threshold: float = 0.7,
+    use_reranking: bool = False,
+):
+    """
+    Optimized document retrieval with optional reranking for better performance
+    """
+    if use_reranking:
+        reranker = LinearCombinationReranker(weight=0.7)
+        results = (
+            table.search(query, query_type=query_type)
+            .rerank(reranker=reranker)
+            .limit(limit)
+            .to_list()
+        )
+    else:
+        results = (
+            table.search(query, query_type=query_type)
+            .limit(limit)
+            .to_list()
+        )
+    
+    filtered_results = [
+        result for result in results
+        if result.get("_relevance_score", 0) >= similarity_threshold
+    ]
+    
+    return filtered_results
+
+
 def setup_lancedb():
     """
     Setup LanceDB table with initial configuration
