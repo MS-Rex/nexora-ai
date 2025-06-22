@@ -9,7 +9,7 @@ from lancedb.pydantic import LanceModel, Vector
 from lancedb.table import LanceTable
 from lancedb.rerankers import LinearCombinationReranker
 
-openai_func = get_registry().get("openai").create(name="text-embedding-3-small")
+openai_func = get_registry().get("openai").create(name="text-embedding-3-large")
 
 
 class Document(LanceModel):
