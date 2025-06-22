@@ -11,7 +11,7 @@ from src.app.agents.tools.bus_tools import register_bus_tools
 from src.app.agents.tools.cafeteria_tools import register_cafeteria_tools
 from src.app.agents.tools.exam_tools import register_exam_tools
 from src.app.agents.tools.user_tools import register_user_tools
-from src.app.agents.tools.rag_tools import register_rag_tools
+from src.app.services.rag_service import rag_service
 from typing import Optional, Dict, Any
 import logging
 import httpx
@@ -34,7 +34,7 @@ class OrchestratorAgent:
     and intelligently decides which tools to use based on the user's query. It can:
     - Handle single-domain queries (events only, departments only, bus routes only, cafeteria menus only, exam results only, user profile only, general chat)
     - Handle multi-domain queries (events + departments + bus routes + cafeteria + exam results + user profile, etc.)
-    - Handle knowledge-based queries using the RAG system
+    - Handle knowledge-based queries using automatically injected RAG context
     - Coordinate multiple tool calls and compose unified responses
     - Scale to new tools without architectural changes
     """
@@ -66,7 +66,6 @@ class OrchestratorAgent:
         register_cafeteria_tools(agent, OrchestratorAgentDeps)
         register_exam_tools(agent, OrchestratorAgentDeps)
         register_user_tools(agent, OrchestratorAgentDeps)
-        register_rag_tools(agent, OrchestratorAgentDeps)
 
         return agent
 
@@ -80,6 +79,58 @@ class OrchestratorAgent:
             # Fallback to test model for development
             return "test"
 
+    async def _get_rag_context(self, message: str) -> str:
+        """
+        Automatically retrieve relevant context from the knowledge base for the user's message.
+        
+        Args:
+            message: User's message to search for relevant context
+            
+        Returns:
+            Formatted context string from the knowledge base, or empty string if no relevant context found
+        """
+        try:
+            # Check if knowledge base is loaded
+            if not rag_service.is_knowledge_base_loaded():
+                logger.warning("Knowledge base is not loaded, skipping RAG context retrieval")
+                return ""
+            
+            # Search for relevant context with reasonable defaults
+            results = rag_service.search_knowledge(
+                query=message,
+                query_type="hybrid",  
+                limit=5,  # Limit to top 5 most relevant results
+            )
+            
+            if not results:
+                logger.debug(f"No relevant knowledge base results found for query: {message[:50]}...")
+                return ""
+            
+            # Format the context in a structured way
+            context_parts = ["**Knowledge Base Context:**\n"]
+            
+            for i, result in enumerate(results, 1):
+                text = result.get("text", "")
+                source = result.get("source_file", "unknown")
+                score = result.get("_relevance_score", 0)
+                
+                # Only include results with reasonable relevance scores
+                if score >= settings.RAG_SIMILARITY_THRESHOLD:
+                    context_parts.append(f"**Source {i}: {source} (Relevance: {score:.2f})**")
+                    context_parts.append(text)
+                    context_parts.append("---")
+            
+            # Only return context if we have relevant results
+            if len(context_parts) > 1:  # More than just the header
+                context_parts.append("\n**End of Knowledge Base Context**\n")
+                return "\n".join(context_parts)
+            
+            return ""
+            
+        except Exception as e:
+            logger.error(f"Error retrieving RAG context: {e}")
+            return ""
+
     async def handle_query(
         self,
         message: str,
@@ -89,14 +140,16 @@ class OrchestratorAgent:
         http_client: Optional[httpx.AsyncClient] = None,
     ) -> str:
         """
-        Handle any user query by intelligently selecting and using appropriate tools.
+        Handle any user query by automatically injecting RAG context and using appropriate tools.
 
-        The agent will analyze the query and automatically:
-        1. Determine which tools are needed (events, departments, bus routes, or combinations)
-        2. Make the necessary tool calls (potentially multiple, in parallel)
-        3. Compose a unified, comprehensive response
+        The agent will:
+        1. Automatically retrieve relevant context from the knowledge base
+        2. Inject this context into the message before processing
+        3. Analyze the query and automatically determine which tools are needed
+        4. Make the necessary tool calls (potentially multiple, in parallel)
+        5. Compose a unified, comprehensive response
 
-        This replaces the need for intent classification and agent routing.
+        This eliminates the need for RAG tool calls and provides context automatically.
 
         Args:
             message: User's message (can be single or multi-domain)
@@ -106,7 +159,7 @@ class OrchestratorAgent:
             http_client: HTTP client for API calls (will create if not provided)
 
         Returns:
-            Comprehensive response using appropriate tools
+            Comprehensive response using appropriate tools with RAG context
         """
         # Create HTTP client if not provided
         if http_client is None:
@@ -116,14 +169,25 @@ class OrchestratorAgent:
             should_close_client = False
 
         try:
+            # Automatically retrieve RAG context before processing
+            rag_context = await self._get_rag_context(message)
+            
+            # Enhance the message with RAG context if available
+            enhanced_message = message
+            if rag_context:
+                enhanced_message = f"{rag_context}\n\n**User Query:** {message}"
+                logger.info(f"Enhanced message with RAG context for user {user_id}")
+            else:
+                logger.debug(f"No RAG context found for user {user_id}")
+
             # Create dependencies for the agent
             deps = OrchestratorAgentDeps(
                 http_client=http_client, base_api_url=settings.BASE_URL, user_id=user_id
             )
 
-            # Let the agent analyze the query and use appropriate tools
+            # Let the agent analyze the enhanced query and use appropriate tools
             result = await self.agent.run(
-                message, deps=deps, message_history=message_history, usage=usage
+                enhanced_message, deps=deps, message_history=message_history, usage=usage
             )
 
             return result.output
