@@ -7,12 +7,14 @@ import re
 from typing import Optional, Tuple
 import numpy as np
 import whisper
-from gtts import gTTS
+from elevenlabs import VoiceSettings
+from elevenlabs.client import ElevenLabs
 from pydub import AudioSegment
 from pydub.silence import split_on_silence
 import soundfile as sf
 import librosa
 from src.app.agents.orchestrator_agent import orchestrator_agent
+from src.app.core.config.settings import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -25,15 +27,27 @@ class VoiceService:
     def __init__(self):
         self.whisper_model = None
         self.orchestrator_agent = orchestrator_agent
+        self.settings = get_settings()
+        self.elevenlabs_client = None
         self._load_models()
 
     def _load_models(self):
-        """Load Whisper model and initialize orchestrator agent"""
+        """Load Whisper model, initialize orchestrator agent, and setup ElevenLabs client"""
         try:
             # Load Whisper model (using base model for balance of speed/accuracy)
             logger.info("Loading Whisper model...")
             self.whisper_model = whisper.load_model("small")
             logger.info("✅ Whisper model loaded successfully")
+
+            # Initialize ElevenLabs client
+            if self.settings.ELEVEN_LABS_API_KEY:
+                logger.info("Initializing ElevenLabs client...")
+                self.elevenlabs_client = ElevenLabs(
+                    api_key=self.settings.ELEVEN_LABS_API_KEY
+                )
+                logger.info("✅ ElevenLabs client initialized successfully")
+            else:
+                logger.warning("❌ ELEVEN_LABS_API_KEY not found in environment variables")
 
             # Check if orchestrator agent is available
             if self.orchestrator_agent:
@@ -43,6 +57,39 @@ class VoiceService:
 
         except Exception as e:
             logger.error(f"❌ Error loading models: {e}")
+
+    async def get_available_voices(self) -> list:
+        """
+        Get available voices from ElevenLabs
+
+        Returns:
+            List of available voices
+        """
+        try:
+            if not self.elevenlabs_client:
+                logger.error("❌ ElevenLabs client not initialized")
+                return []
+
+            loop = asyncio.get_event_loop()
+            voices = await loop.run_in_executor(
+                None, lambda: self.elevenlabs_client.voices.search()
+            )
+            
+            voice_list = []
+            for voice in voices.voices:
+                voice_list.append({
+                    "voice_id": voice.voice_id,
+                    "name": voice.name,
+                    "description": getattr(voice, 'description', 'No description'),
+                    "category": getattr(voice, 'category', 'Unknown')
+                })
+            
+            logger.info(f"✅ Found {len(voice_list)} available voices")
+            return voice_list
+
+        except Exception as e:
+            logger.error(f"❌ Error fetching voices: {e}")
+            return []
 
     async def transcribe_audio(self, audio_data: bytes) -> str:
         """
@@ -182,18 +229,22 @@ class VoiceService:
             logger.error(f"Full traceback: {traceback.format_exc()}")
             return "Sorry, I encountered an error while generating a response."
 
-    async def text_to_speech(self, text: str, language: str = "en") -> bytes:
+    async def text_to_speech(self, text: str, voice_id: str = "EXAVITQu4vr4xnSDxMaL") -> bytes:
         """
-        Convert text to speech using gTTS
+        Convert text to speech using ElevenLabs
 
         Args:
             text: Text to convert to speech
-            language: Language code (default: 'en')
+            voice_id: ElevenLabs voice ID (default: Bella - a pleasant female voice)
 
         Returns:
             Audio bytes in MP3 format
         """
         try:
+            if not self.elevenlabs_client:
+                logger.error("❌ ElevenLabs client not initialized")
+                return b""
+
             # Detect if text likely contains markdown and clean it if needed
             if any(
                 marker in text for marker in ["#", "```", "`", "*", "_", "[", "]", "->"]
@@ -201,22 +252,47 @@ class VoiceService:
                 logger.info("📝 Detected markdown in text for speech, cleaning...")
                 text = self._clean_markdown_for_speech(text)
 
-            # Create gTTS object
-            tts = gTTS(text=text, lang=language, slow=False)
+            logger.info(f"🔊 Generating speech with ElevenLabs for: {text[:50]}...")
 
-            # Save to bytes buffer
-            audio_buffer = io.BytesIO()
-            tts.write_to_fp(audio_buffer)
-            audio_buffer.seek(0)
+            # Generate speech using ElevenLabs
+            loop = asyncio.get_event_loop()
+            audio_generator = await loop.run_in_executor(
+                None, 
+                lambda: self.elevenlabs_client.text_to_speech.convert(
+                    text=text,
+                    voice_id=voice_id,
+                    model_id="eleven_multilingual_v2",
+                    voice_settings=VoiceSettings(
+                        stability=0.71,
+                        similarity_boost=0.5,
+                        style=0.0,
+                        use_speaker_boost=True,
+                    ),
+                    output_format="mp3_44100_128",
+                )
+            )
 
-            audio_bytes = audio_buffer.getvalue()
-            logger.info(f"🔊 Generated speech for: {text[:50]}...")
+            # Convert generator to bytes
+            audio_bytes = b"".join(audio_generator)
+            logger.info(f"✅ Generated {len(audio_bytes)} bytes of audio with ElevenLabs")
 
             return audio_bytes
 
         except Exception as e:
-            logger.error(f"❌ Error generating speech: {e}")
-            return b""
+            logger.error(f"❌ Error generating speech with ElevenLabs: {e}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+            
+            # Fallback to a simple error message
+            logger.info("🔄 Attempting to generate simple fallback audio...")
+            try:
+                # Create a simple fallback message
+                fallback_text = "Sorry, there was an issue generating speech."
+                # For now, return empty bytes - you could implement a basic TTS fallback here if needed
+                return b""
+            except Exception as fallback_error:
+                logger.error(f"❌ Fallback audio generation also failed: {fallback_error}")
+                return b""
 
     def preprocess_audio_chunk(self, audio_chunk: bytes) -> bytes:
         """
