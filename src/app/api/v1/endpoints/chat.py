@@ -34,18 +34,18 @@ async def enhanced_chat_with_agent(
         # Step 1: Content Moderation - Check BEFORE processing with LLM
         logger.info(f"Moderating content for user {request.user_id}")
         moderation_result = await moderation_service.moderate_content(request.message)
-        
+
         # If content is flagged, return moderation response WITHOUT calling LLM
         if moderation_result.flagged:
             logger.warning(
                 f"Content flagged for user {request.user_id}: {moderation_result.reason}"
             )
-            
+
             # Generate appropriate moderation response
             moderation_response = moderation_service.get_moderation_response_message(
                 moderation_result
             )
-            
+
             return EnhancedChatResponse(
                 response=moderation_response,
                 agent_name="Nexora Campus Copilot",
@@ -61,7 +61,7 @@ async def enhanced_chat_with_agent(
 
         # Step 2: Content passed moderation - process normally
         logger.info(f"Content passed moderation for user {request.user_id}")
-        
+
         # Process message through the orchestrator service with conversation history
         result = await nexora_service.chat(
             message=request.message,

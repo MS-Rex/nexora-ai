@@ -4,9 +4,8 @@ from pydantic_ai import Agent
 from pydantic_ai.common_tools.duckduckgo import duckduckgo_search_tool
 import lancedb
 from lancedb_setup import setup_lancedb, retrive_similar_docs
-from pydantic_settings import BaseSettings,SettingsConfigDict
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
-
 
 
 logfire.configure()
@@ -14,7 +13,7 @@ Agent.instrument_all()
 
 # class Settings(BaseSettings):
 #     # groq_api_key: str
-#     # openai_api_key: str 
+#     # openai_api_key: str
 #     # weatherstack_api_key: str
 #     model_config = SettingsConfigDict(env_file='.env',extra="allow")
 
@@ -108,5 +107,6 @@ def main():
         print(response.output)
 
         message_history = response.all_messages()
+
 
 main()

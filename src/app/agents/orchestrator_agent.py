@@ -3,7 +3,11 @@ from pydantic_ai.usage import Usage
 from pydantic_ai.messages import ModelMessage
 from src.app.core.config.settings import settings
 from src.app.agents.prompts.prompts_loader import agent_prompts_loader
-from src.app.agents.tools.base import ToolDependencies, format_datetime_context_for_prompt, generate_datetime_context
+from src.app.agents.tools.base import (
+    ToolDependencies,
+    format_datetime_context_for_prompt,
+    generate_datetime_context,
+)
 from src.app.agents.tools.department_tools import register_department_tools
 from src.app.agents.tools.event_tools import register_event_tools
 from src.app.agents.tools.bus_tools import register_bus_tools
@@ -80,51 +84,57 @@ class OrchestratorAgent:
     async def _get_rag_context(self, message: str) -> str:
         """
         Automatically retrieve relevant context from the knowledge base for the user's message.
-        
+
         Args:
             message: User's message to search for relevant context
-            
+
         Returns:
             Formatted context string from the knowledge base, or empty string if no relevant context found
         """
         try:
             # Check if knowledge base is loaded
             if not rag_service.is_knowledge_base_loaded():
-                logger.warning("Knowledge base is not loaded, skipping RAG context retrieval")
+                logger.warning(
+                    "Knowledge base is not loaded, skipping RAG context retrieval"
+                )
                 return ""
-            
+
             # Search for relevant context with reasonable defaults
             results = rag_service.search_knowledge(
                 query=message,
-                query_type="hybrid",  
+                query_type="hybrid",
                 limit=5,  # Limit to top 5 most relevant results
             )
-            
+
             if not results:
-                logger.debug(f"No relevant knowledge base results found for query: {message[:50]}...")
+                logger.debug(
+                    f"No relevant knowledge base results found for query: {message[:50]}..."
+                )
                 return ""
-            
+
             # Format the context in a structured way
             context_parts = ["**Knowledge Base Context:**\n"]
-            
+
             for i, result in enumerate(results, 1):
                 text = result.get("text", "")
                 source = result.get("source_file", "unknown")
                 score = result.get("_relevance_score", 0)
-                
+
                 # Only include results with reasonable relevance scores
                 if score >= settings.RAG_SIMILARITY_THRESHOLD:
-                    context_parts.append(f"**Source {i}: {source} (Relevance: {score:.2f})**")
+                    context_parts.append(
+                        f"**Source {i}: {source} (Relevance: {score:.2f})**"
+                    )
                     context_parts.append(text)
                     context_parts.append("---")
-            
+
             # Only return context if we have relevant results
             if len(context_parts) > 1:  # More than just the header
                 context_parts.append("\n**End of Knowledge Base Context**\n")
                 return "\n".join(context_parts)
-            
+
             return ""
-            
+
         except Exception as e:
             logger.error(f"Error retrieving RAG context: {e}")
             return ""
@@ -170,34 +180,39 @@ class OrchestratorAgent:
         try:
             # Automatically retrieve RAG context before processing
             rag_context = await self._get_rag_context(message)
-            
+
             # Generate fresh datetime context for this query
             datetime_context = generate_datetime_context()
-            formatted_datetime_context = format_datetime_context_for_prompt(datetime_context)
-            
+            formatted_datetime_context = format_datetime_context_for_prompt(
+                datetime_context
+            )
+
             # Enhance the message with both RAG and datetime context
             enhanced_message_parts = [formatted_datetime_context]
-            
+
             if rag_context:
                 enhanced_message_parts.append(rag_context)
                 logger.info(f"Enhanced message with RAG context for user {user_id}")
             else:
                 logger.debug(f"No RAG context found for user {user_id}")
-            
+
             enhanced_message_parts.append(f"**User Query:** {message}")
             enhanced_message = "\n\n".join(enhanced_message_parts)
 
             # Create dependencies for the agent with fresh datetime context
             deps = OrchestratorAgentDeps(
-                http_client=http_client, 
-                base_api_url=settings.BASE_URL, 
+                http_client=http_client,
+                base_api_url=settings.BASE_URL,
                 user_id=user_id,
-                datetime_context=datetime_context  # Fresh datetime context for each query
+                datetime_context=datetime_context,  # Fresh datetime context for each query
             )
 
             # Let the agent analyze the enhanced query and use appropriate tools
             result = await self.agent.run(
-                enhanced_message, deps=deps, message_history=message_history, usage=usage
+                enhanced_message,
+                deps=deps,
+                message_history=message_history,
+                usage=usage,
             )
 
             return result.output

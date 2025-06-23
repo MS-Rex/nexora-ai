@@ -47,7 +47,9 @@ class VoiceService:
                 )
                 logger.info("✅ ElevenLabs client initialized successfully")
             else:
-                logger.warning("❌ ELEVEN_LABS_API_KEY not found in environment variables")
+                logger.warning(
+                    "❌ ELEVEN_LABS_API_KEY not found in environment variables"
+                )
 
             # Check if orchestrator agent is available
             if self.orchestrator_agent:
@@ -74,16 +76,18 @@ class VoiceService:
             voices = await loop.run_in_executor(
                 None, lambda: self.elevenlabs_client.voices.search()
             )
-            
+
             voice_list = []
             for voice in voices.voices:
-                voice_list.append({
-                    "voice_id": voice.voice_id,
-                    "name": voice.name,
-                    "description": getattr(voice, 'description', 'No description'),
-                    "category": getattr(voice, 'category', 'Unknown')
-                })
-            
+                voice_list.append(
+                    {
+                        "voice_id": voice.voice_id,
+                        "name": voice.name,
+                        "description": getattr(voice, "description", "No description"),
+                        "category": getattr(voice, "category", "Unknown"),
+                    }
+                )
+
             logger.info(f"✅ Found {len(voice_list)} available voices")
             return voice_list
 
@@ -229,7 +233,9 @@ class VoiceService:
             logger.error(f"Full traceback: {traceback.format_exc()}")
             return "Sorry, I encountered an error while generating a response."
 
-    async def text_to_speech(self, text: str, voice_id: str = "EXAVITQu4vr4xnSDxMaL") -> bytes:
+    async def text_to_speech(
+        self, text: str, voice_id: str = "EXAVITQu4vr4xnSDxMaL"
+    ) -> bytes:
         """
         Convert text to speech using ElevenLabs
 
@@ -242,10 +248,12 @@ class VoiceService:
         """
         try:
             if not self.elevenlabs_client:
-                logger.error("❌ ElevenLabs client not initialized - falling back to error message")
+                logger.error(
+                    "❌ ElevenLabs client not initialized - falling back to error message"
+                )
                 error_msg = "Sorry, voice synthesis is not available at the moment."
                 # Return a simple text message as bytes (could be enhanced with a basic TTS fallback)
-                return error_msg.encode('utf-8')
+                return error_msg.encode("utf-8")
 
             # Detect if text likely contains markdown and clean it if needed
             if any(
@@ -259,7 +267,7 @@ class VoiceService:
             # Generate speech using ElevenLabs
             loop = asyncio.get_event_loop()
             audio_generator = await loop.run_in_executor(
-                None, 
+                None,
                 lambda: self.elevenlabs_client.text_to_speech.convert(
                     text=text,
                     voice_id=voice_id,
@@ -271,20 +279,23 @@ class VoiceService:
                         use_speaker_boost=True,
                     ),
                     output_format="mp3_44100_128",
-                )
+                ),
             )
 
             # Convert generator to bytes
             audio_bytes = b"".join(audio_generator)
-            logger.info(f"✅ Generated {len(audio_bytes)} bytes of audio with ElevenLabs")
+            logger.info(
+                f"✅ Generated {len(audio_bytes)} bytes of audio with ElevenLabs"
+            )
 
             return audio_bytes
 
         except Exception as e:
             logger.error(f"❌ Error generating speech with ElevenLabs: {e}")
             import traceback
+
             logger.error(f"Full traceback: {traceback.format_exc()}")
-            
+
             # Fallback to a simple error message
             logger.info("🔄 Attempting to generate simple fallback audio...")
             try:
@@ -293,7 +304,9 @@ class VoiceService:
                 # For now, return empty bytes - you could implement a basic TTS fallback here if needed
                 return b""
             except Exception as fallback_error:
-                logger.error(f"❌ Fallback audio generation also failed: {fallback_error}")
+                logger.error(
+                    f"❌ Fallback audio generation also failed: {fallback_error}"
+                )
                 return b""
 
     def preprocess_audio_chunk(self, audio_chunk: bytes) -> bytes:
@@ -444,7 +457,7 @@ class VoiceService:
                 error_audio = await self.text_to_speech(error_msg)
                 # Ensure we return valid bytes even if TTS fails
                 if not error_audio:
-                    error_audio = error_msg.encode('utf-8')
+                    error_audio = error_msg.encode("utf-8")
                 return "", error_audio
 
             logger.info(f"✅ Successfully transcribed: '{transcribed_text}'")
@@ -476,10 +489,10 @@ class VoiceService:
                 error_audio = await self.text_to_speech(error_msg)
                 # Ensure we return valid bytes even if TTS fails
                 if not error_audio:
-                    error_audio = error_msg.encode('utf-8')
+                    error_audio = error_msg.encode("utf-8")
             except Exception as tts_error:
                 logger.error(f"❌ TTS also failed in error handling: {tts_error}")
-                error_audio = error_msg.encode('utf-8')
+                error_audio = error_msg.encode("utf-8")
             return "", error_audio
 
 

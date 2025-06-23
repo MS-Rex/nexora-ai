@@ -18,9 +18,9 @@ class DateTimeTools:
     """
     Standalone datetime tools that can be used without PydanticAI agents.
     Useful for testing, direct API access, or anywhere datetime info is needed.
-    
+
     All datetime operations default to Sri Lanka (Asia/Colombo) timezone.
-    
+
     Note: For PydanticAI agents, datetime context is automatically provided
     in the message context, so these tools are not needed as agent tools.
     """
@@ -34,7 +34,7 @@ class DateTimeTools:
             # Default to Sri Lanka (Colombo) timezone if none specified
             if timezone_name is None:
                 timezone_name = "Asia/Colombo"
-            
+
             if timezone_name:
                 try:
                     import zoneinfo
@@ -45,6 +45,7 @@ class DateTimeTools:
                     # Fallback to Sri Lanka timezone, then UTC if that fails
                     try:
                         import zoneinfo
+
                         tz = zoneinfo.ZoneInfo("Asia/Colombo")
                         current_dt = datetime.now(tz)
                     except Exception:
@@ -53,6 +54,7 @@ class DateTimeTools:
                 # This shouldn't happen now, but keeping as fallback
                 try:
                     import zoneinfo
+
                     tz = zoneinfo.ZoneInfo("Asia/Colombo")
                     current_dt = datetime.now(tz)
                 except Exception:
@@ -66,7 +68,9 @@ class DateTimeTools:
                 "day_of_week": current_dt.strftime("%A"),
                 "month": current_dt.strftime("%B"),
                 "year": current_dt.year,
-                "timezone": str(current_dt.tzinfo) if current_dt.tzinfo else "Asia/Colombo",
+                "timezone": (
+                    str(current_dt.tzinfo) if current_dt.tzinfo else "Asia/Colombo"
+                ),
                 "formatted_readable": current_dt.strftime("%A, %B %d, %Y at %I:%M %p"),
                 "unix_timestamp": int(current_dt.timestamp()),
                 "success": True,
@@ -87,6 +91,7 @@ class DateTimeTools:
                     # Convert to Sri Lanka timezone for consistency
                     try:
                         import zoneinfo
+
                         tz = zoneinfo.ZoneInfo("Asia/Colombo")
                         dt = dt.replace(tzinfo=tz)
                     except Exception:
@@ -100,6 +105,7 @@ class DateTimeTools:
                 # Use Sri Lanka timezone as default
                 try:
                     import zoneinfo
+
                     tz = zoneinfo.ZoneInfo("Asia/Colombo")
                     dt = datetime.now(tz)
                 except Exception:
@@ -137,6 +143,7 @@ class DateTimeTools:
             # Use Sri Lanka timezone as default
             try:
                 import zoneinfo
+
                 tz = zoneinfo.ZoneInfo("Asia/Colombo")
                 current_dt = datetime.now(tz)
             except Exception:
@@ -158,7 +165,11 @@ class DateTimeTools:
                 utc_time = datetime.now(timezone.utc)
                 result.update(
                     {
-                        "timezone_local": str(current_dt.tzinfo) if current_dt.tzinfo else "Asia/Colombo",
+                        "timezone_local": (
+                            str(current_dt.tzinfo)
+                            if current_dt.tzinfo
+                            else "Asia/Colombo"
+                        ),
                         "utc_time": utc_time.strftime("%H:%M:%S UTC"),
                         "utc_timestamp": utc_time.isoformat(),
                         "colombo_time": current_dt.strftime("%H:%M:%S %Z"),

@@ -12,11 +12,9 @@ router = APIRouter()
 
 class ModerationRequest(BaseModel):
     """Request model for content moderation."""
+
     content: str = Field(
-        ...,
-        min_length=1,
-        max_length=2000,
-        description="Content to moderate"
+        ..., min_length=1, max_length=2000, description="Content to moderate"
     )
 
 
@@ -27,10 +25,10 @@ async def moderate_content(
 ) -> ModerationResult:
     """
     Moderate content for policy violations.
-    
+
     This endpoint allows testing the moderation functionality independently
     and can be used by other services that need content moderation.
-    
+
     Returns detailed moderation results including:
     - Whether content is flagged
     - Specific categories of violations
@@ -40,17 +38,16 @@ async def moderate_content(
     try:
         logger.info("Processing moderation request")
         result = await moderation_service.moderate_content(request.content)
-        
+
         if result.flagged:
             logger.warning(f"Content flagged: {result.reason}")
         else:
             logger.info("Content passed moderation")
-            
+
         return result
-        
+
     except Exception as e:
         logger.error(f"Error in moderation endpoint: {str(e)}")
         raise HTTPException(
-            status_code=500, 
-            detail=f"Error processing moderation request: {str(e)}"
-        ) 
+            status_code=500, detail=f"Error processing moderation request: {str(e)}"
+        )
