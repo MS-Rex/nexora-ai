@@ -57,3 +57,10 @@ tmp/
 temp/
 *.tmp
 *.temp
+
+# Sphinx documentation build files
+docs/_build/
+docs/.doctrees/
+*.doctree
+docs/_static/doctool-*
+docs/_templates/autosummary/
