@@ -1,3 +1,9 @@
+"""
+Base database configuration for SQLAlchemy models.
+
+This module provides the declarative base and naming conventions for database models.
+"""
+
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import MetaData
 

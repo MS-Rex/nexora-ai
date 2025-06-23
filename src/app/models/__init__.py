@@ -8,9 +8,9 @@ from .pydantic import *
 from .database import Conversation, Message, Base
 
 __all__ = [
-    # Re-export all pydantic models
+    # Pydantic models
     "ChatRequest",
-    "ChatResponse",
+    "ChatResponse", 
     "EnhancedChatResponse",
     "HealthResponse",
     "Department",

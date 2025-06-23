@@ -1,5 +1,12 @@
-from pydantic import BaseModel, Field
+"""
+Pydantic models for health check endpoints.
+
+This module contains data models for health monitoring and status reporting.
+"""
+
 from datetime import datetime
+
+from pydantic import BaseModel, Field
 
 
 class HealthResponse(BaseModel):
