@@ -1,3 +1,11 @@
+"""
+Database models for conversation and message storage.
+
+This module contains SQLAlchemy models for storing chat conversations and messages.
+"""
+
+from uuid import uuid4
+
 from sqlalchemy import (
     Column,
     String,
@@ -8,10 +16,15 @@ from sqlalchemy import (
     Integer,
     JSON,
 )
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from uuid import uuid4
+from pydantic_ai.messages import (
+    ModelRequest,
+    ModelResponse,
+    UserPromptPart,
+    TextPart,
+)
+
 from .base import Base
 
 
@@ -29,20 +42,28 @@ class Conversation(Base):
     title = Column(
         String(255), nullable=True
     )  # Can be auto-generated from first message
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now())  # pylint: disable=not-callable
     updated_at = Column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()  # pylint: disable=not-callable
     )
     is_active = Column(Boolean, default=True)
 
     # Metadata
     total_messages = Column(Integer, default=0)
-    last_activity = Column(DateTime(timezone=True), server_default=func.now())
+    last_activity = Column(DateTime(timezone=True), server_default=func.now())  # pylint: disable=not-callable
 
     # Relationship to messages
     messages = relationship(
         "Message", back_populates="conversation", cascade="all, delete-orphan"
     )
+
+    def get_title(self):
+        """Get conversation title."""
+        return self.title
+
+    def update_activity(self):
+        """Update last activity timestamp."""
+        self.last_activity = func.now()  # pylint: disable=not-callable
 
 
 class Message(Base):
@@ -63,7 +84,7 @@ class Message(Base):
     role = Column(String(20), nullable=False)  # 'user' or 'assistant'
 
     # Timestamps
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now())  # pylint: disable=not-callable
 
     # AI Agent metadata (only for assistant messages)
     agent_name = Column(String(100), nullable=True)
@@ -81,14 +102,11 @@ class Message(Base):
 
     def to_model_message(self):
         """Convert to pydantic_ai ModelMessage format for agent context."""
-        from pydantic_ai.messages import (
-            ModelRequest,
-            ModelResponse,
-            UserPromptPart,
-            TextPart,
-        )
-
         if self.role == "user":
             return ModelRequest(parts=[UserPromptPart(content=self.content)])
-        else:
-            return ModelResponse(parts=[TextPart(content=self.content)])
+
+        return ModelResponse(parts=[TextPart(content=self.content)])
+
+    def get_role(self):
+        """Get message role."""
+        return self.role

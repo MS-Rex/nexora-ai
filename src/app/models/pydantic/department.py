@@ -1,6 +1,13 @@
-from pydantic import BaseModel
-from typing import Optional
+"""
+Pydantic models for department functionality.
+
+This module contains data models for department information and API responses.
+"""
+
 from datetime import datetime
+from typing import Optional
+
+from pydantic import BaseModel
 
 
 class Department(BaseModel):

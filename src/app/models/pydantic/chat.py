@@ -1,6 +1,13 @@
-from pydantic import BaseModel, Field
-from typing import Optional
+"""
+Pydantic models for chat functionality.
+
+This module contains data models for chat requests, responses, and related functionality.
+"""
+
 from datetime import datetime
+from typing import Optional
+
+from pydantic import BaseModel, Field
 
 
 class ChatRequest(BaseModel):
