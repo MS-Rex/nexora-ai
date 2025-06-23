@@ -1,12 +1,20 @@
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, func
-from sqlalchemy.orm import selectinload
-from src.app.models.database.conversation import Conversation, Message
-from pydantic_ai.messages import ModelMessage
-from typing import Optional, List, Dict, Any
-from uuid import uuid4
-from datetime import datetime
+"""
+Conversation service for managing conversation history in the database.
+
+This module provides functionality to store, retrieve, and manage conversation
+history between users and AI agents using SQLAlchemy ORM.
+"""
+
 import logging
+from datetime import datetime
+from typing import Optional, List, Dict, Any
+
+from pydantic_ai.messages import ModelMessage
+from sqlalchemy import select, desc, func
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
+from src.app.models.database.conversation import Conversation, Message
 
 logger = logging.getLogger(__name__)
 
@@ -54,12 +62,12 @@ class ConversationService:
             await self.db.commit()
             await self.db.refresh(conversation)
 
-            logger.info(f"Created new conversation: {conversation.id}")
+            logger.info("Created new conversation: %s", conversation.id)
             return conversation
 
         except Exception as e:
             await self.db.rollback()
-            logger.error(f"Error creating/retrieving conversation: {e}")
+            logger.error("Error creating/retrieving conversation: %s", e)
             raise
 
     async def save_user_message(self, conversation_id: str, content: str) -> Message:
@@ -87,20 +95,15 @@ class ConversationService:
 
         except Exception as e:
             await self.db.rollback()
-            logger.error(f"Error saving user message: {e}")
+            logger.error("Error saving user message: %s", e)
             raise
 
     async def save_assistant_message(
         self,
         conversation_id: str,
         content: str,
-        agent_name: str,
-        agent_used: str,
-        intent: str,
-        success: bool,
-        usage_data: Optional[Dict[str, Any]] = None,
-        response_time_ms: Optional[int] = None,
-        error_message: Optional[str] = None,
+        agent_data: Dict[str, Any],
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> Message:
         """
         Save assistant message to the database.
@@ -108,29 +111,26 @@ class ConversationService:
         Args:
             conversation_id: ID of the conversation
             content: Message content
-            agent_name: Name of the agent
-            agent_used: Agent that was used
-            intent: Classified intent
-            success: Whether the request was successful
-            usage_data: Usage tracking data
-            response_time_ms: Response time in milliseconds
-            error_message: Error message if any
+            agent_data: Dictionary containing agent_name, agent_used, intent, success
+            metadata: Optional metadata containing usage_data, response_time_ms, error_message
 
         Returns:
             Message object
         """
         try:
+            metadata = metadata or {}
+
             message = Message(
                 conversation_id=conversation_id,
                 content=content,
                 role="assistant",
-                agent_name=agent_name,
-                agent_used=agent_used,
-                intent=intent,
-                success=success,
-                usage_data=usage_data,
-                response_time_ms=response_time_ms,
-                error_message=error_message,
+                agent_name=agent_data.get("agent_name"),
+                agent_used=agent_data.get("agent_used"),
+                intent=agent_data.get("intent"),
+                success=agent_data.get("success", True),
+                usage_data=metadata.get("usage_data"),
+                response_time_ms=metadata.get("response_time_ms"),
+                error_message=metadata.get("error_message"),
             )
 
             self.db.add(message)
@@ -142,7 +142,7 @@ class ConversationService:
 
         except Exception as e:
             await self.db.rollback()
-            logger.error(f"Error saving assistant message: {e}")
+            logger.error("Error saving assistant message: %s", e)
             raise
 
     async def get_conversation_history(
@@ -187,7 +187,7 @@ class ConversationService:
             return model_messages
 
         except Exception as e:
-            logger.error(f"Error retrieving conversation history: {e}")
+            logger.error("Error retrieving conversation history: %s", e)
             return []
 
     async def get_conversation_summary(
@@ -223,7 +223,7 @@ class ConversationService:
             }
 
         except Exception as e:
-            logger.error(f"Error getting conversation summary: {e}")
+            logger.error("Error getting conversation summary: %s", e)
             return None
 
     async def _update_conversation_metadata(
@@ -244,31 +244,33 @@ class ConversationService:
             conversation = result.scalar_one()
 
             # Update message count
-            result = await self.db.execute(
+            message_count_result = await self.db.execute(
                 select(func.count(Message.id)).where(
                     Message.conversation_id == conversation_id
                 )
             )
-            total_messages = result.scalar()
-
-            conversation.total_messages = total_messages
-            conversation.last_activity = datetime.utcnow()
+            conversation.total_messages = message_count_result.scalar()
 
             # Set title from first message if not set
             if not conversation.title and first_message_content:
-                # Generate a simple title from first 50 characters
+                # Generate a title from first 50 characters
                 title = first_message_content[:50].strip()
                 if len(first_message_content) > 50:
                     title += "..."
                 conversation.title = title
 
+            # Update last activity
+            conversation.last_activity = datetime.utcnow()
+
+            await self.db.commit()
+
         except Exception as e:
-            logger.error(f"Error updating conversation metadata: {e}")
+            logger.error("Error updating conversation metadata: %s", e)
             raise
 
     async def deactivate_conversation(self, session_id: str) -> bool:
         """
-        Deactivate a conversation (soft delete).
+        Mark a conversation as inactive.
 
         Args:
             session_id: Session identifier
@@ -282,14 +284,47 @@ class ConversationService:
             )
             conversation = result.scalar_one_or_none()
 
-            if conversation:
-                conversation.is_active = False
-                await self.db.commit()
-                return True
+            if not conversation:
+                return False
 
-            return False
+            conversation.is_active = False
+            conversation.last_activity = datetime.utcnow()
+            await self.db.commit()
+
+            logger.info("Deactivated conversation: %s", conversation.id)
+            return True
 
         except Exception as e:
             await self.db.rollback()
-            logger.error(f"Error deactivating conversation: {e}")
-            raise
+            logger.error("Error deactivating conversation: %s", e)
+            return False
+
+    async def delete_conversation(self, session_id: str) -> bool:
+        """
+        Delete a conversation and all its messages.
+
+        Args:
+            session_id: Session identifier
+
+        Returns:
+            True if conversation was deleted, False if not found
+        """
+        try:
+            result = await self.db.execute(
+                select(Conversation).where(Conversation.session_id == session_id)
+            )
+            conversation = result.scalar_one_or_none()
+
+            if not conversation:
+                return False
+
+            await self.db.delete(conversation)
+            await self.db.commit()
+
+            logger.info("Deleted conversation: %s", conversation.id)
+            return True
+
+        except Exception as e:
+            await self.db.rollback()
+            logger.error("Error deleting conversation: %s", e)
+            return False
