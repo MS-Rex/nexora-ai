@@ -1,0 +1,98 @@
+/* Custom CSS for better Nexora AI documentation layout */
+
+/* Make the content area wider and more centered */
+.wy-nav-content {
+  max-width: 1200px !important;
+  margin: 0 auto !important;
+}
+
+/* Improve sidebar width */
+.wy-nav-side {
+  width: 280px !important;
+}
+
+/* Adjust main content padding */
+.wy-nav-content-wrap {
+  margin-left: 280px !important;
+}
+
+/* Better responsive behavior */
+@media screen and (max-width: 768px) {
+  .wy-nav-content-wrap {
+    margin-left: 0 !important;
+  }
+
+  .wy-nav-content {
+    max-width: 100% !important;
+    padding: 1rem !important;
+  }
+}
+
+/* Improve code block styling */
+.highlight {
+  margin: 1rem 0 !important;
+  border-radius: 4px !important;
+}
+
+/* Better table styling */
+.wy-table-responsive table {
+  margin: 1rem auto !important;
+  max-width: 100% !important;
+}
+
+/* Center the main content better */
+.document {
+  max-width: 900px !important;
+  margin: 0 auto !important;
+  padding: 0 2rem !important;
+}
+
+/* Improve header styling */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: #2c3e50 !important;
+  margin-top: 2rem !important;
+  margin-bottom: 1rem !important;
+}
+
+/* Better spacing for sections */
+.section {
+  margin-bottom: 2rem !important;
+}
+
+/* Improve navigation styling */
+.wy-menu-vertical li.current a {
+  border-right: 3px solid #2980b9 !important;
+}
+
+/* Custom styling for API endpoints */
+.highlight-text {
+  background-color: #f8f9fa !important;
+  padding: 0.5rem !important;
+  border-radius: 4px !important;
+  border-left: 4px solid #007bff !important;
+}
+
+/* Better button/link styling */
+a.reference.external {
+  color: #007bff !important;
+  text-decoration: none !important;
+}
+
+a.reference.external:hover {
+  text-decoration: underline !important;
+}
+
+/* Improve the main title */
+.wy-nav-content h1:first-child {
+  color: #1e3a8a !important;
+  font-size: 2.5rem !important;
+  text-align: center !important;
+  margin-bottom: 2rem !important;
+  border-bottom: 2px solid #e5e7eb !important;
+  padding-bottom: 1rem !important;
+}
