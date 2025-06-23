@@ -3,10 +3,9 @@ from pydantic_ai.usage import Usage
 from pydantic_ai.messages import ModelMessage
 from src.app.core.config.settings import settings
 from src.app.agents.prompts.prompts_loader import agent_prompts_loader
-from src.app.agents.tools.base import ToolDependencies
+from src.app.agents.tools.base import ToolDependencies, format_datetime_context_for_prompt, generate_datetime_context
 from src.app.agents.tools.department_tools import register_department_tools
 from src.app.agents.tools.event_tools import register_event_tools
-from src.app.agents.tools.datetime_tools import register_datetime_tools
 from src.app.agents.tools.bus_tools import register_bus_tools
 from src.app.agents.tools.cafeteria_tools import register_cafeteria_tools
 from src.app.agents.tools.exam_tools import register_exam_tools
@@ -61,7 +60,6 @@ class OrchestratorAgent:
         # Register ALL available tools - the agent will decide which to use
         register_department_tools(agent, OrchestratorAgentDeps)
         register_event_tools(agent, OrchestratorAgentDeps)
-        register_datetime_tools(agent, OrchestratorAgentDeps)
         register_bus_tools(agent, OrchestratorAgentDeps)
         register_cafeteria_tools(agent, OrchestratorAgentDeps)
         register_exam_tools(agent, OrchestratorAgentDeps)
@@ -140,16 +138,17 @@ class OrchestratorAgent:
         http_client: Optional[httpx.AsyncClient] = None,
     ) -> str:
         """
-        Handle any user query by automatically injecting RAG context and using appropriate tools.
+        Handle any user query by automatically injecting RAG context and datetime context, then using appropriate tools.
 
         The agent will:
         1. Automatically retrieve relevant context from the knowledge base
-        2. Inject this context into the message before processing
-        3. Analyze the query and automatically determine which tools are needed
-        4. Make the necessary tool calls (potentially multiple, in parallel)
-        5. Compose a unified, comprehensive response
+        2. Generate current datetime context
+        3. Inject both contexts into the message before processing
+        4. Analyze the query and automatically determine which tools are needed
+        5. Make the necessary tool calls (potentially multiple, in parallel)
+        6. Compose a unified, comprehensive response
 
-        This eliminates the need for RAG tool calls and provides context automatically.
+        This eliminates the need for RAG tool calls and datetime tool calls by providing context automatically.
 
         Args:
             message: User's message (can be single or multi-domain)
@@ -159,7 +158,7 @@ class OrchestratorAgent:
             http_client: HTTP client for API calls (will create if not provided)
 
         Returns:
-            Comprehensive response using appropriate tools with RAG context
+            Comprehensive response using appropriate tools with RAG and datetime context
         """
         # Create HTTP client if not provided
         if http_client is None:
@@ -172,17 +171,28 @@ class OrchestratorAgent:
             # Automatically retrieve RAG context before processing
             rag_context = await self._get_rag_context(message)
             
-            # Enhance the message with RAG context if available
-            enhanced_message = message
+            # Generate fresh datetime context for this query
+            datetime_context = generate_datetime_context()
+            formatted_datetime_context = format_datetime_context_for_prompt(datetime_context)
+            
+            # Enhance the message with both RAG and datetime context
+            enhanced_message_parts = [formatted_datetime_context]
+            
             if rag_context:
-                enhanced_message = f"{rag_context}\n\n**User Query:** {message}"
+                enhanced_message_parts.append(rag_context)
                 logger.info(f"Enhanced message with RAG context for user {user_id}")
             else:
                 logger.debug(f"No RAG context found for user {user_id}")
+            
+            enhanced_message_parts.append(f"**User Query:** {message}")
+            enhanced_message = "\n\n".join(enhanced_message_parts)
 
-            # Create dependencies for the agent
+            # Create dependencies for the agent with fresh datetime context
             deps = OrchestratorAgentDeps(
-                http_client=http_client, base_api_url=settings.BASE_URL, user_id=user_id
+                http_client=http_client, 
+                base_api_url=settings.BASE_URL, 
+                user_id=user_id,
+                datetime_context=datetime_context  # Fresh datetime context for each query
             )
 
             # Let the agent analyze the enhanced query and use appropriate tools
