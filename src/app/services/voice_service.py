@@ -242,8 +242,10 @@ class VoiceService:
         """
         try:
             if not self.elevenlabs_client:
-                logger.error("❌ ElevenLabs client not initialized")
-                return b""
+                logger.error("❌ ElevenLabs client not initialized - falling back to error message")
+                error_msg = "Sorry, voice synthesis is not available at the moment."
+                # Return a simple text message as bytes (could be enhanced with a basic TTS fallback)
+                return error_msg.encode('utf-8')
 
             # Detect if text likely contains markdown and clean it if needed
             if any(
@@ -440,6 +442,9 @@ class VoiceService:
                 logger.warning("⚠️  No text transcribed from audio")
                 error_msg = "Sorry, I couldn't understand your message. Please try speaking more clearly and try again."
                 error_audio = await self.text_to_speech(error_msg)
+                # Ensure we return valid bytes even if TTS fails
+                if not error_audio:
+                    error_audio = error_msg.encode('utf-8')
                 return "", error_audio
 
             logger.info(f"✅ Successfully transcribed: '{transcribed_text}'")
@@ -467,7 +472,14 @@ class VoiceService:
 
             logger.error(f"Full traceback: {traceback.format_exc()}")
             error_msg = "Sorry, I encountered an error processing your message."
-            error_audio = await self.text_to_speech(error_msg)
+            try:
+                error_audio = await self.text_to_speech(error_msg)
+                # Ensure we return valid bytes even if TTS fails
+                if not error_audio:
+                    error_audio = error_msg.encode('utf-8')
+            except Exception as tts_error:
+                logger.error(f"❌ TTS also failed in error handling: {tts_error}")
+                error_audio = error_msg.encode('utf-8')
             return "", error_audio
 
 

@@ -175,10 +175,12 @@ async def voice_status():
         return {
             "status": "active",
             "whisper_loaded": voice_service.whisper_model is not None,
+            "elevenlabs_client_initialized": voice_service.elevenlabs_client is not None,
+            "elevenlabs_api_key_configured": voice_service.settings.ELEVEN_LABS_API_KEY is not None,
             "orchestrator_agent_configured": voice_service.orchestrator_agent
             is not None,
             "active_connections": len(manager.active_connections),
-            "message": "Voice-to-voice service is running with OrchestratorAgent",
+            "message": "Voice-to-voice service is running with ElevenLabs TTS and OrchestratorAgent",
         }
     except Exception as e:
         logger.error(f"❌ Error getting voice status: {e}")
