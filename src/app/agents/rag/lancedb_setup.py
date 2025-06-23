@@ -108,5 +108,3 @@ def setup_lancedb():
 
 
 # setup_lancedb()
-
-

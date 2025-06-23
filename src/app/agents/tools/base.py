@@ -18,11 +18,11 @@ logger = logging.getLogger(__name__)
 def generate_datetime_context(timezone_name: Optional[str] = None) -> Dict[str, Any]:
     """
     Generate comprehensive datetime context information.
-    
+
     Args:
         timezone_name: Optional timezone name (e.g., 'UTC', 'America/New_York').
                       Defaults to system local timezone.
-    
+
     Returns:
         Comprehensive datetime information in various formats
     """
@@ -31,6 +31,7 @@ def generate_datetime_context(timezone_name: Optional[str] = None) -> Dict[str, 
         if timezone_name:
             try:
                 import zoneinfo
+
                 tz = zoneinfo.ZoneInfo(timezone_name)
                 current_dt = datetime.now(tz)
             except Exception:
@@ -76,13 +77,17 @@ def generate_datetime_context(timezone_name: Optional[str] = None) -> Dict[str, 
         # Add UTC information if not already in UTC
         if current_dt.tzinfo != timezone.utc:
             utc_time = datetime.now(timezone.utc)
-            datetime_context.update({
-                "utc_time": utc_time.strftime("%H:%M:%S UTC"),
-                "utc_timestamp": utc_time.isoformat(),
-                "utc_date": utc_time.strftime("%Y-%m-%d"),
-            })
+            datetime_context.update(
+                {
+                    "utc_time": utc_time.strftime("%H:%M:%S UTC"),
+                    "utc_timestamp": utc_time.isoformat(),
+                    "utc_date": utc_time.strftime("%Y-%m-%d"),
+                }
+            )
 
-        logger.debug(f"Generated datetime context: {datetime_context['datetime_local']}")
+        logger.debug(
+            f"Generated datetime context: {datetime_context['datetime_local']}"
+        )
         return datetime_context
 
     except Exception as e:
@@ -98,16 +103,16 @@ def generate_datetime_context(timezone_name: Optional[str] = None) -> Dict[str, 
 def format_datetime_context_for_prompt(datetime_context: Dict[str, Any]) -> str:
     """
     Format datetime context for inclusion in agent prompts.
-    
+
     Args:
         datetime_context: Datetime context dictionary from generate_datetime_context()
-        
+
     Returns:
         Formatted string suitable for agent context
     """
     if "error" in datetime_context:
         return f"**Current DateTime:** {datetime_context.get('error', 'Unknown error')}"
-    
+
     context_lines = [
         "**CURRENT DATE & TIME CONTEXT:**",
         f"📅 **Date:** {datetime_context['formatted_readable']}",
@@ -121,14 +126,16 @@ def format_datetime_context_for_prompt(datetime_context: Dict[str, Any]) -> str:
         f"- Short Date: {datetime_context['formatted_short']}",
         f"- Unix Timestamp: {datetime_context['unix_timestamp']}",
     ]
-    
+
     # Add UTC info if available
     if "utc_time" in datetime_context:
-        context_lines.extend([
-            f"- UTC Time: {datetime_context['utc_time']}",
-            f"- UTC Date: {datetime_context['utc_date']}",
-        ])
-    
+        context_lines.extend(
+            [
+                f"- UTC Time: {datetime_context['utc_time']}",
+                f"- UTC Date: {datetime_context['utc_date']}",
+            ]
+        )
+
     context_lines.append("---")
     return "\n".join(context_lines)
 
@@ -140,7 +147,9 @@ class ToolDependencies:
     http_client: httpx.AsyncClient
     base_api_url: str = settings.BASE_URL
     # Datetime context is automatically generated and included
-    datetime_context: Dict[str, Any] = field(default_factory=lambda: generate_datetime_context())
+    datetime_context: Dict[str, Any] = field(
+        default_factory=lambda: generate_datetime_context()
+    )
 
 
 class ToolError(Exception):

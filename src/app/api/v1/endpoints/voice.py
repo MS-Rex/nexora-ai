@@ -175,8 +175,10 @@ async def voice_status():
         return {
             "status": "active",
             "whisper_loaded": voice_service.whisper_model is not None,
-            "elevenlabs_client_initialized": voice_service.elevenlabs_client is not None,
-            "elevenlabs_api_key_configured": voice_service.settings.ELEVEN_LABS_API_KEY is not None,
+            "elevenlabs_client_initialized": voice_service.elevenlabs_client
+            is not None,
+            "elevenlabs_api_key_configured": voice_service.settings.ELEVEN_LABS_API_KEY
+            is not None,
             "orchestrator_agent_configured": voice_service.orchestrator_agent
             is not None,
             "active_connections": len(manager.active_connections),

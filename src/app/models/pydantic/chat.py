@@ -51,7 +51,8 @@ class EnhancedChatResponse(BaseModel):
         default=False, description="Whether content was checked by moderation"
     )
     content_flagged: bool = Field(
-        default=False, description="Whether the input content was flagged as inappropriate"
+        default=False,
+        description="Whether the input content was flagged as inappropriate",
     )
     moderation_reason: Optional[str] = Field(
         None, description="Reason for content flagging if applicable"
