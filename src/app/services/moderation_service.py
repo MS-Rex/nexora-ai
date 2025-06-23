@@ -1,7 +1,16 @@
+"""
+Content moderation service using OpenAI's moderation API with keyword fallback.
+
+This module provides functionality to check user-generated content for policy violations
+including hate speech, harassment, violence, sexual content, and self-harm.
+"""
+
 import logging
+from typing import Optional
+
 import httpx
-from typing import Dict, Any, Optional, List
 from pydantic import BaseModel, Field
+
 from src.app.core.config.settings import settings
 
 logger = logging.getLogger(__name__)
@@ -68,16 +77,16 @@ class ModerationService:
             # Try OpenAI moderation API first (most robust)
             if self.api_key:
                 return await self._openai_moderation(content)
-            else:
-                logger.warning(
-                    "OpenAI API key not configured, falling back to keyword filtering"
-                )
-                return await self._keyword_moderation(content)
+
+            logger.warning(
+                "OpenAI API key not configured, falling back to keyword filtering"
+            )
+            return await self._keyword_moderation(content)
 
         except Exception as e:
-            logger.error(f"Moderation service error: {e}")
+            logger.error("Moderation service error: %s", e)
             logger.warning(
-                f"Moderation failed for content (allowing): {content[:100]}..."
+                "Moderation failed for content (allowing): %s...", content[:100]
             )
             return ModerationResult(
                 flagged=False,
@@ -100,7 +109,7 @@ class ModerationService:
             )
 
             if response.status_code != 200:
-                logger.error(f"OpenAI moderation API error: {response.status_code}")
+                logger.error("OpenAI moderation API error: %s", response.status_code)
                 return await self._keyword_moderation(content)
 
             data = response.json()

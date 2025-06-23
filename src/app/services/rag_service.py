@@ -1,17 +1,21 @@
+"""
+RAG (Retrieval-Augmented Generation) service for knowledge base management.
+
+This module provides functionality to load, chunk, and search documents in a
+LanceDB vector database for enhanced AI responses with domain-specific knowledge.
+"""
+
+import logging
+from functools import lru_cache
 from pathlib import Path
 from typing import List, Dict, Any, Optional
-import logging
-import asyncio
-from functools import lru_cache
 
-import tiktoken
 import lancedb
-import pandas as pd
-import pyarrow as pa
+import tiktoken
 from lancedb.embeddings import get_registry
 from lancedb.pydantic import LanceModel, Vector
-from lancedb.table import LanceTable
 from lancedb.rerankers import LinearCombinationReranker
+from lancedb.table import LanceTable
 
 from src.app.core.config.settings import settings
 
@@ -70,7 +74,7 @@ class RAGService:
 
             return chunks
         except Exception as e:
-            logger.error(f"Error chunking text: {e}")
+            logger.error("Error chunking text: %s", e)
             return [text]  # Return original text if chunking fails
 
     def get_or_create_table(self, overwrite: bool = False) -> LanceTable:
@@ -82,7 +86,7 @@ class RAGService:
             existing_tables = db.table_names()
 
             if self.table_name in existing_tables and not overwrite:
-                logger.info(f"Using existing table: {self.table_name}")
+                logger.info("Using existing table: %s", self.table_name)
                 return db.open_table(self.table_name)
 
             # Create new table
@@ -92,11 +96,11 @@ class RAGService:
             # Create full-text search index
             table.create_fts_index("text", replace=overwrite)
 
-            logger.info(f"Created new table: {self.table_name}")
+            logger.info("Created new table: %s", self.table_name)
             return table
 
         except Exception as e:
-            logger.error(f"Error creating/getting table: {e}")
+            logger.error("Error creating/getting table: %s", e)
             raise
 
     def load_knowledge_base(self, overwrite: bool = False) -> bool:
@@ -106,7 +110,7 @@ class RAGService:
 
             if not knowledge_base_dir.exists():
                 logger.error(
-                    f"Knowledge base directory not found: {knowledge_base_dir}"
+                    "Knowledge base directory not found: %s", knowledge_base_dir
                 )
                 return False
 
@@ -114,66 +118,77 @@ class RAGService:
             md_files = list(knowledge_base_dir.glob("*.md"))
 
             if not md_files:
-                logger.warning(f"No markdown files found in {knowledge_base_dir}")
+                logger.warning("No markdown files found in %s", knowledge_base_dir)
                 return False
 
-            logger.info(f"Found {len(md_files)} markdown files to process")
+            logger.info("Found %d markdown files to process", len(md_files))
 
             # Get or create table
             table = self.get_or_create_table(overwrite=overwrite)
-
-            # Process each markdown file
-            all_documents = []
-
-            for md_file in md_files:
-                logger.info(f"Processing file: {md_file.name}")
-
-                try:
-                    with open(md_file, "r", encoding="utf-8") as f:
-                        content = f.read()
-
-                    # Chunk the content
-                    chunks = self.chunk_text(content)
-
-                    # Create document entries for each chunk
-                    for i, chunk in enumerate(chunks):
-                        doc_id = f"{md_file.stem}_chunk_{i}"
-                        document = {
-                            "id": doc_id,
-                            "text": chunk,
-                            "source_file": md_file.name,
-                            "chunk_index": i,
-                            "file_path": str(md_file),
-                            "file_size": len(content),
-                            "total_chunks": len(chunks),
-                        }
-                        all_documents.append(document)
-
-                except Exception as e:
-                    logger.error(f"Error processing file {md_file.name}: {e}")
-                    continue
+            all_documents = self._process_markdown_files(md_files)
 
             if all_documents:
-                # Add documents to table in batches
-                batch_size = 100
-                for i in range(0, len(all_documents), batch_size):
-                    batch = all_documents[i : i + batch_size]
-                    table.add(batch)
-                    logger.info(
-                        f"Added batch {i//batch_size + 1} ({len(batch)} documents)"
-                    )
-
-                logger.info(
-                    f"Successfully loaded {len(all_documents)} document chunks from {len(md_files)} files"
-                )
+                self._add_documents_to_table(table, all_documents, len(md_files))
                 return True
-            else:
-                logger.warning("No documents were processed successfully")
-                return False
+
+            logger.warning("No documents were processed successfully")
+            return False
 
         except Exception as e:
-            logger.error(f"Error loading knowledge base: {e}")
+            logger.error("Error loading knowledge base: %s", e)
             return False
+
+    def _process_markdown_files(self, md_files: List[Path]) -> List[Dict[str, Any]]:
+        """Process markdown files and return document chunks."""
+        all_documents = []
+
+        for md_file in md_files:
+            logger.info("Processing file: %s", md_file.name)
+
+            try:
+                with open(md_file, "r", encoding="utf-8") as f:
+                    content = f.read()
+
+                # Chunk the content
+                chunks = self.chunk_text(content)
+
+                # Create document entries for each chunk
+                for i, chunk in enumerate(chunks):
+                    doc_id = f"{md_file.stem}_chunk_{i}"
+                    document = {
+                        "id": doc_id,
+                        "text": chunk,
+                        "source_file": md_file.name,
+                        "chunk_index": i,
+                        "file_path": str(md_file),
+                        "file_size": len(content),
+                        "total_chunks": len(chunks),
+                    }
+                    all_documents.append(document)
+
+            except Exception as e:
+                logger.error("Error processing file %s: %s", md_file.name, e)
+                continue
+
+        return all_documents
+
+    def _add_documents_to_table(
+        self, table: LanceTable, documents: List[Dict[str, Any]], file_count: int
+    ):
+        """Add documents to table in batches."""
+        batch_size = 100
+        for i in range(0, len(documents), batch_size):
+            batch = documents[i : i + batch_size]
+            table.add(batch)
+            logger.info(
+                "Added batch %d (%d documents)", i // batch_size + 1, len(batch)
+            )
+
+        logger.info(
+            "Successfully loaded %d document chunks from %d files",
+            len(documents),
+            file_count,
+        )
 
     def search_knowledge(
         self,
@@ -215,12 +230,14 @@ class RAGService:
             ]
 
             logger.info(
-                f"Found {len(filtered_results)} relevant documents for query: {query[:50]}..."
+                "Found %d relevant documents for query: %s...",
+                len(filtered_results),
+                query[:50],
             )
             return filtered_results
 
         except Exception as e:
-            logger.error(f"Error searching knowledge base: {e}")
+            logger.error("Error searching knowledge base: %s", e)
             return []
 
     def get_context_from_results(self, results: List[Dict[str, Any]]) -> str:
@@ -250,39 +267,34 @@ class RAGService:
             return False
 
     def get_table_stats(self) -> Dict[str, Any]:
-        """Get statistics about the loaded knowledge base."""
+        """Get statistics about the knowledge base table."""
         try:
             if not self.is_knowledge_base_loaded():
-                return {"loaded": False}
+                return {"error": "Knowledge base not loaded"}
 
             db = lancedb.connect(self.db_path)
             table = db.open_table(self.table_name)
 
             # Get basic stats
-            count = table.count_rows()
-
-            # Get unique source files
-            df = table.to_pandas()
-            unique_sources = (
-                df["source_file"].nunique() if "source_file" in df.columns else 0
-            )
-
-            return {
-                "loaded": True,
-                "total_chunks": count,
-                "unique_sources": unique_sources,
+            stats = {
+                "total_documents": len(table),
                 "table_name": self.table_name,
+                "db_path": self.db_path,
+                "chunk_size": self.chunk_size,
+                "similarity_threshold": self.similarity_threshold,
+                "max_results": self.max_results,
             }
 
+            return stats
+
         except Exception as e:
-            logger.error(f"Error getting table stats: {e}")
-            return {"loaded": False, "error": str(e)}
+            logger.error("Error getting table stats: %s", e)
+            return {"error": str(e)}
 
 
-# Global RAG service instance
 @lru_cache()
 def get_rag_service() -> RAGService:
-    """Get cached RAG service instance."""
+    """Get singleton RAG service instance."""
     return RAGService()
 
 
