@@ -19,14 +19,10 @@ dependencies = [
     "greenlet>=3.0.0",
     "logfire>=3.18.0",
     "websockets>=13.0.1",
-    "openai-whisper>=20240930",
     "openai>=1.0.0",
+    "groq>=0.15.0",
     "elevenlabs>=1.1.0",
     "pydub>=0.25.1",
-    "numpy>=1.24.0",
-    "torch>=2.0.0",
-    "librosa>=0.10.0",
-    "soundfile>=0.12.1",
     # RAG Dependencies
     "lancedb>=0.17.0",
     "tiktoken>=0.8.0",
@@ -42,4 +38,7 @@ dependencies = [
     "furo>=2024.1.29",
     "sphinxcontrib-openapi>=0.8.0",
     "myst-parser>=2.0.0",
+    # Evaluation Dependencies
+    "deepeval>=1.2.16",
+    "pytest>=8.0.0",
 ]
