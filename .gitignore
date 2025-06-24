@@ -58,6 +58,15 @@ temp/
 *.tmp
 *.temp
 
+# DeepEval and LLM Evaluation
+.deepeval/
+evaluation_results/
+*.evaluation
+deepeval_results/
+deepeval_cache/
+.deepeval_cache/
+confident_ai_cache/
+
 # Sphinx documentation build files
 docs/_build/
 docs/.doctrees/

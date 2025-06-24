@@ -1,9 +1,9 @@
 """
 Voice service for handling speech-to-text, AI response generation, and text-to-speech.
 
-This module provides comprehensive voice interaction functionality using Whisper for
-speech recognition, orchestrator agent for response generation, and ElevenLabs for
-text-to-speech synthesis.
+This module provides comprehensive voice interaction functionality using Groq API 
+(Whisper-large-v3-turbo) for speech recognition, orchestrator agent for response 
+generation, and ElevenLabs for text-to-speech synthesis.
 """
 
 import asyncio
@@ -15,7 +15,7 @@ import tempfile
 import traceback
 from typing import Optional, Tuple
 
-import whisper
+from groq import Groq
 from elevenlabs import VoiceSettings
 from elevenlabs.client import ElevenLabs
 from pydub import AudioSegment
@@ -32,19 +32,24 @@ class VoiceService:
     """
 
     def __init__(self):
-        self.whisper_model = None
+        self.groq_client = None
         self.orchestrator_agent = orchestrator_agent
         self.settings = get_settings()
         self.elevenlabs_client = None
         self._load_models()
 
     def _load_models(self):
-        """Load Whisper model, initialize orchestrator agent, and setup ElevenLabs client"""
+        """Initialize Groq client, orchestrator agent, and setup ElevenLabs client"""
         try:
-            # Load Whisper model (using base model for balance of speed/accuracy)
-            logger.info("Loading Whisper model...")
-            self.whisper_model = whisper.load_model("small")
-            logger.info("✅ Whisper model loaded successfully")
+            # Initialize Groq client for speech-to-text
+            if self.settings.GROQ_API_KEY:
+                logger.info("Initializing Groq client...")
+                self.groq_client = Groq(api_key=self.settings.GROQ_API_KEY)
+                logger.info("✅ Groq client initialized successfully")
+            else:
+                logger.warning(
+                    "❌ GROQ_API_KEY not found in environment variables"
+                )
 
             # Initialize ElevenLabs client
             if self.settings.ELEVEN_LABS_API_KEY:
@@ -104,7 +109,7 @@ class VoiceService:
 
     async def transcribe_audio(self, audio_data: bytes) -> str:
         """
-        Transcribe audio bytes to text using Whisper
+        Transcribe audio bytes to text using Groq API (Whisper-large-v3-turbo)
 
         Args:
             audio_data: Raw audio bytes
@@ -113,9 +118,13 @@ class VoiceService:
             Transcribed text
         """
         try:
+            if not self.groq_client:
+                logger.error("❌ Groq client not initialized")
+                return ""
+
             logger.info("📥 Received audio data: %d bytes", len(audio_data))
 
-            # Create temporary file for audio processing - use generic extension first
+            # Create temporary file for audio processing
             with tempfile.NamedTemporaryFile(
                 suffix=".webm", delete=False
             ) as temp_file:
@@ -145,12 +154,13 @@ class VoiceService:
                     logger.warning("⚠️  Audio too short: %dms", len(audio_segment))
                     return ""
 
+                # Process audio for optimal transcription
                 processed_filename = self._process_audio_segment(
                     audio_segment, temp_filename
                 )
-                transcribed_text = await self._transcribe_processed_audio(
-                    processed_filename
-                )
+                
+                # Transcribe using Groq API
+                transcribed_text = await self._transcribe_with_groq(processed_filename)
 
                 return transcribed_text
 
@@ -186,24 +196,38 @@ class VoiceService:
         logger.info("🔄 Processed audio saved to: %s", processed_filename)
         return processed_filename
 
-    async def _transcribe_processed_audio(self, processed_filename: str) -> str:
-        """Transcribe processed audio file."""
-        # Transcribe using Whisper
-        logger.info("🎯 Starting Whisper transcription...")
-        loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(
-            None, self._transcribe_with_whisper, processed_filename
-        )
+    async def _transcribe_with_groq(self, audio_file_path: str) -> str:
+        """Transcribe audio file using Groq API."""
+        try:
+            logger.info("🎯 Starting Groq transcription...")
+            
+            # Read the audio file
+            with open(audio_file_path, "rb") as audio_file:
+                # Create transcription using Groq's Whisper-large-v3-turbo
+                loop = asyncio.get_event_loop()
+                transcription = await loop.run_in_executor(
+                    None,
+                    lambda: self.groq_client.audio.transcriptions.create(
+                        file=("audio.wav", audio_file.read(), "audio/wav"),
+                        model="whisper-large-v3-turbo",
+                        language="en",  # Force English for better accuracy
+                        response_format="text"
+                    )
+                )
+                
+                transcribed_text = transcription.strip()
+                logger.info("🎙️ Transcribed: '%s'", transcribed_text)
 
-        transcribed_text = result["text"].strip()
-        logger.info("🎙️ Transcribed: '%s'", transcribed_text)
+                # Check if transcription is meaningful
+                if len(transcribed_text) < 2:
+                    logger.warning("⚠️  Transcription too short, likely silence or noise")
+                    return ""
 
-        # Check if transcription is meaningful
-        if len(transcribed_text) < 2:
-            logger.warning("⚠️  Transcription too short, likely silence or noise")
+                return transcribed_text
+
+        except Exception as e:
+            logger.error("❌ Groq transcription failed: %s", e)
             return ""
-
-        return transcribed_text
 
     def _cleanup_temp_files(self, temp_filename: str, local_vars: dict):
         """Clean up temporary files."""
@@ -214,19 +238,7 @@ class VoiceService:
         except Exception as cleanup_error:
             logger.warning("⚠️  Error cleaning up temp files: %s", cleanup_error)
 
-    def _transcribe_with_whisper(self, audio_file_path: str) -> dict:
-        """Helper method to run Whisper transcription synchronously"""
-        try:
-            result = self.whisper_model.transcribe(
-                audio_file_path,
-                language="en",  # Force English for better accuracy
-                task="transcribe",
-                verbose=False,
-            )
-            return result
-        except Exception as e:
-            logger.error("❌ Whisper transcription failed: %s", e)
-            return {"text": ""}
+
 
     async def generate_response(self, text: str, user_id: Optional[str] = None) -> str:
         """
