@@ -175,14 +175,18 @@ class NexoraService:
             await conversation_service.save_assistant_message(
                 conversation_id=conversation.id,
                 content=response,
-                agent_name="Nexora Campus Copilot",
-                agent_used="Nexora Campus Copilot",
-                intent="campus",
-                success=True,
-                usage_data=(
-                    usage.dict() if hasattr(usage, "dict") else {"usage": str(usage)}
-                ),
-                response_time_ms=response_time_ms,
+                agent_data={
+                    "agent_name": "Nexora Campus Copilot",
+                    "agent_used": "Nexora Campus Copilot",
+                    "intent": "campus",
+                    "success": True,
+                },
+                metadata={
+                    "usage_data": (
+                        usage.dict() if hasattr(usage, "dict") else {"usage": str(usage)}
+                    ),
+                    "response_time_ms": response_time_ms,
+                },
             )
 
             return {
