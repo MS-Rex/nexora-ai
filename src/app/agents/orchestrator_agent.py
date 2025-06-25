@@ -74,7 +74,7 @@ class OrchestratorAgent:
     def _get_available_model(self) -> str:
         """Get the first available AI model based on API keys."""
         if settings.GEMINI_API_KEY:
-            return "gemini:gemini-2.5-flash"
+            return "google-gla:gemini-2.5-flash"
         elif settings.OPENAI_API_KEY:
             return "openai:gpt-4o-mini"
         elif settings.ANTHROPIC_API_KEY:
