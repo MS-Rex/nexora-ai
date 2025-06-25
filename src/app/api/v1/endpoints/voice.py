@@ -156,7 +156,7 @@ async def handle_audio_chunk(
             response_audio_b64 = base64.b64encode(response_audio).decode("utf-8")
             await manager.send_message(
                 client_id,
-                {"type": "response_audio", "data": response_audio_b64, "format": "wav"},
+                {"type": "response_audio", "data": response_audio_b64, "format": "mp3"},
             )
 
         logger.info(f"✅ Voice processing completed for {client_id}")
@@ -176,9 +176,11 @@ async def voice_status():
             "status": "active",
             "groq_client_initialized": voice_service.groq_client is not None,
             "groq_api_key_configured": voice_service.settings.GROQ_API_KEY is not None,
+            "openai_client_initialized": voice_service.openai_client is not None,
+            "openai_api_key_configured": voice_service.settings.OPENAI_API_KEY is not None,
             "orchestrator_agent_configured": voice_service.orchestrator_agent is not None,
             "active_connections": len(manager.active_connections),
-            "message": "Voice-to-voice service is running with Groq STT/TTS and OrchestratorAgent",
+            "message": "Voice-to-voice service is running with Groq STT, OpenAI TTS, and OrchestratorAgent",
         }
     except Exception as e:
         logger.error(f"❌ Error getting voice status: {e}")

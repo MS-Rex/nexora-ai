@@ -2,7 +2,7 @@
 Voice service for handling speech-to-text, AI response generation, and text-to-speech.
 
 This module provides comprehensive voice interaction functionality using Groq API 
-for both speech recognition (Whisper-large-v3-turbo) and text-to-speech (PlayAI Dialog),
+for speech recognition (Whisper-large-v3-turbo) and OpenAI TTS for text-to-speech,
 along with orchestrator agent for response generation.
 """
 
@@ -16,6 +16,7 @@ import traceback
 from typing import Optional, Tuple, List, Dict
 
 from groq import Groq
+from openai import OpenAI
 from pydub import AudioSegment
 
 from src.app.agents.orchestrator_agent import orchestrator_agent
@@ -31,21 +32,32 @@ class VoiceService:
 
     def __init__(self):
         self.groq_client = None
+        self.openai_client = None
         self.orchestrator_agent = orchestrator_agent
         self.settings = get_settings()
         self._load_models()
 
     def _load_models(self):
-        """Initialize Groq client for both STT and TTS, and orchestrator agent"""
+        """Initialize Groq client for STT, OpenAI client for TTS, and orchestrator agent"""
         try:
-            # Initialize Groq client for speech-to-text and text-to-speech
+            # Initialize Groq client for speech-to-text
             if self.settings.GROQ_API_KEY:
-                logger.info("Initializing Groq client...")
+                logger.info("Initializing Groq client for STT...")
                 self.groq_client = Groq(api_key=self.settings.GROQ_API_KEY)
-                logger.info("✅ Groq client initialized successfully for STT and TTS")
+                logger.info("✅ Groq client initialized successfully for STT")
             else:
                 logger.warning(
                     "❌ GROQ_API_KEY not found in environment variables"
+                )
+
+            # Initialize OpenAI client for text-to-speech
+            if self.settings.OPENAI_API_KEY:
+                logger.info("Initializing OpenAI client for TTS...")
+                self.openai_client = OpenAI(api_key=self.settings.OPENAI_API_KEY)
+                logger.info("✅ OpenAI client initialized successfully for TTS")
+            else:
+                logger.warning(
+                    "❌ OPENAI_API_KEY not found in environment variables"
                 )
 
             # Check if orchestrator agent is available
@@ -59,49 +71,24 @@ class VoiceService:
 
     async def get_available_voices(self) -> List[Dict[str, str]]:
         """
-        Get available voices for Groq PlayAI TTS
+        Get available voices for OpenAI TTS
 
         Returns:
             List of available voices with their details
         """
         try:
-            # Groq PlayAI TTS supported voices
-            # English voices for playai-tts model
-            english_voices = [
-                {"voice_id": "Arista-PlayAI", "name": "Arista", "description": "Conversational and warm", "language": "English"},
-                {"voice_id": "Atlas-PlayAI", "name": "Atlas", "description": "Strong and confident", "language": "English"},
-                {"voice_id": "Basil-PlayAI", "name": "Basil", "description": "Gentle and soothing", "language": "English"},
-                {"voice_id": "Briggs-PlayAI", "name": "Briggs", "description": "Professional and clear", "language": "English"},
-                {"voice_id": "Calum-PlayAI", "name": "Calum", "description": "Friendly and approachable", "language": "English"},
-                {"voice_id": "Celeste-PlayAI", "name": "Celeste", "description": "Elegant and sophisticated", "language": "English"},
-                {"voice_id": "Cheyenne-PlayAI", "name": "Cheyenne", "description": "Energetic and vibrant", "language": "English"},
-                {"voice_id": "Chip-PlayAI", "name": "Chip", "description": "Cheerful and upbeat", "language": "English"},
-                {"voice_id": "Cillian-PlayAI", "name": "Cillian", "description": "Smooth and articulate", "language": "English"},
-                {"voice_id": "Deedee-PlayAI", "name": "Deedee", "description": "Animated and expressive", "language": "English"},
-                {"voice_id": "Fritz-PlayAI", "name": "Fritz", "description": "Reliable and steady", "language": "English"},
-                {"voice_id": "Gail-PlayAI", "name": "Gail", "description": "Warm and caring", "language": "English"},
-                {"voice_id": "Indigo-PlayAI", "name": "Indigo", "description": "Creative and unique", "language": "English"},
-                {"voice_id": "Mamaw-PlayAI", "name": "Mamaw", "description": "Wise and nurturing", "language": "English"},
-                {"voice_id": "Mason-PlayAI", "name": "Mason", "description": "Strong and dependable", "language": "English"},
-                {"voice_id": "Mikail-PlayAI", "name": "Mikail", "description": "Intelligent and thoughtful", "language": "English"},
-                {"voice_id": "Mitch-PlayAI", "name": "Mitch", "description": "Casual and relaxed", "language": "English"},
-                {"voice_id": "Quinn-PlayAI", "name": "Quinn", "description": "Modern and crisp", "language": "English"},
-                {"voice_id": "Thunder-PlayAI", "name": "Thunder", "description": "Powerful and commanding", "language": "English"},
+            # OpenAI TTS supported voices
+            openai_voices = [
+                {"voice_id": "alloy", "name": "Alloy", "description": "Neutral and versatile", "gender": "Neutral"},
+                {"voice_id": "echo", "name": "Echo", "description": "Warm and engaging", "gender": "Male"},
+                {"voice_id": "fable", "name": "Fable", "description": "Expressive and storytelling", "gender": "Female"},
+                {"voice_id": "onyx", "name": "Onyx", "description": "Deep and authoritative", "gender": "Male"},
+                {"voice_id": "nova", "name": "Nova", "description": "Bright and energetic", "gender": "Female"},
+                {"voice_id": "shimmer", "name": "Shimmer", "description": "Soft and calming", "gender": "Female"},
             ]
 
-            # Arabic voices for playai-tts-arabic model
-            arabic_voices = [
-                {"voice_id": "Ahmad-PlayAI", "name": "Ahmad", "description": "Professional Arabic male voice", "language": "Arabic"},
-                {"voice_id": "Amira-PlayAI", "name": "Amira", "description": "Elegant Arabic female voice", "language": "Arabic"},
-                {"voice_id": "Khalid-PlayAI", "name": "Khalid", "description": "Confident Arabic male voice", "language": "Arabic"},
-                {"voice_id": "Nasser-PlayAI", "name": "Nasser", "description": "Authoritative Arabic male voice", "language": "Arabic"},
-            ]
-
-            all_voices = english_voices + arabic_voices
-
-            logger.info("✅ Found %d available voices (%d English, %d Arabic)", 
-                       len(all_voices), len(english_voices), len(arabic_voices))
-            return all_voices
+            logger.info("✅ Found %d available OpenAI TTS voices", len(openai_voices))
+            return openai_voices
 
         except Exception as e:
             logger.error("❌ Error fetching voices: %s", e)
@@ -270,60 +257,50 @@ class VoiceService:
             return "Sorry, I encountered an error while generating a response."
 
     async def text_to_speech(
-        self, text: str, voice_id: str = "Fritz-PlayAI"
+        self, text: str, voice_id: str = "alloy", model: str = "tts-1"
     ) -> bytes:
         """
-        Convert text to speech using Groq PlayAI TTS
+        Convert text to speech using OpenAI TTS
 
         Args:
             text: Text to convert to speech
-            voice_id: PlayAI voice ID (default: Fritz-PlayAI - a reliable and steady voice)
+            voice_id: OpenAI voice ID (default: alloy - neutral and versatile)
+            model: TTS model to use (tts-1 or tts-1-hd, default: tts-1 for speed)
 
         Returns:
-            Audio bytes in WAV format
+            Audio bytes in MP3 format
         """
         try:
-            if not self.groq_client:
-                logger.error("❌ Groq client not initialized")
+            if not self.openai_client:
+                logger.error("❌ OpenAI client not initialized")
                 return b""
 
             # Clean the text for better speech synthesis
             cleaned_text = self._clean_markdown_for_speech(text)
 
-            logger.info("🔊 Converting text to speech: '%s' with voice '%s'", 
-                       cleaned_text[:100], voice_id)
+            logger.info("🔊 Converting text to speech: '%s' with voice '%s' using model '%s'", 
+                       cleaned_text[:100], voice_id, model)
 
-            # Determine model based on voice
-            model = "playai-tts-arabic" if voice_id.endswith("-PlayAI") and voice_id.startswith(("Ahmad", "Amira", "Khalid", "Nasser")) else "playai-tts"
-
-            # Generate audio using Groq PlayAI TTS
+            # Generate audio using OpenAI TTS
             loop = asyncio.get_event_loop()
             response = await loop.run_in_executor(
                 None,
-                lambda: self.groq_client.audio.speech.create(
+                lambda: self.openai_client.audio.speech.create(
                     model=model,
-                    input=cleaned_text,
                     voice=voice_id,
-                    response_format="wav"
+                    input=cleaned_text,
+                    response_format="mp3"
                 ),
             )
 
             # Get audio bytes from response
-            audio_bytes = b""
-            if hasattr(response, 'content'):
-                audio_bytes = response.content
-            elif hasattr(response, 'read'):
-                audio_bytes = response.read()
-            else:
-                # If response is iterable (streaming), collect all chunks
-                for chunk in response:
-                    audio_bytes += chunk
+            audio_bytes = response.content
 
-            logger.info("✅ Successfully generated %d bytes of audio using Groq TTS", len(audio_bytes))
+            logger.info("✅ Successfully generated %d bytes of audio using OpenAI TTS", len(audio_bytes))
             return audio_bytes
 
         except Exception as e:
-            logger.error("❌ Error converting text to speech with Groq: %s", e)
+            logger.error("❌ Error converting text to speech with OpenAI: %s", e)
             logger.error("Full traceback: %s", traceback.format_exc())
             return b""
 
@@ -403,14 +380,14 @@ class VoiceService:
         # Ensure proper sentence endings
         text = re.sub(r"([.!?])\s*([A-Z])", r"\1 \2", text)
 
-        # Limit text length for TTS (Groq has 10K character limit)
-        if len(text) > 10000:
-            text = text[:9997] + "..."
+        # Limit text length for TTS (OpenAI has 4096 character limit)
+        if len(text) > 4096:
+            text = text[:4093] + "..."
 
         return text.strip()
 
     async def process_voice_message(
-        self, audio_data: bytes, user_id: Optional[str] = None, voice_id: str = "Fritz-PlayAI"
+        self, audio_data: bytes, user_id: Optional[str] = None, voice_id: str = "alloy"
     ) -> Tuple[str, bytes]:
         """
         Process a complete voice message: transcribe -> generate response -> synthesize
@@ -444,7 +421,7 @@ class VoiceService:
 
             logger.info("🤖 Generated response: %s", response_text[:100])
 
-            # Step 3: Convert response to speech using Groq TTS
+            # Step 3: Convert response to speech using OpenAI TTS
             response_audio = await self.text_to_speech(response_text, voice_id)
 
             if not response_audio:
