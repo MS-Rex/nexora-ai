@@ -466,23 +466,6 @@ wheels = [
 ]
 
 [[package]]
-name = "elevenlabs"
-version = "2.4.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "httpx" },
-    { name = "pydantic" },
-    { name = "pydantic-core" },
-    { name = "requests" },
-    { name = "typing-extensions" },
-    { name = "websockets" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/a0/8f/a21f3ec3f50c482a333aa4d6d52ab0f43065a7b19b7dd27cdc5dcda5a4ea/elevenlabs-2.4.0.tar.gz", hash = "sha256:ee78beb37207e3bf6c243f43128b456a3d49c98a261ed98619b0f33828b86714", size = 259145 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/cc/94/552f05d0eeb4710003f06c4e3ff85d25b001e759312474b72c67b401dd13/elevenlabs-2.4.0-py3-none-any.whl", hash = "sha256:d04022a432b7f7191f965740fa392a5109a75e195d85b8b519273d9f61bf137d", size = 740082 },
-]
-
-[[package]]
 name = "email-validator"
 version = "2.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1380,7 +1363,6 @@ dependencies = [
     { name = "asyncpg" },
     { name = "black" },
     { name = "deepeval" },
-    { name = "elevenlabs" },
     { name = "fastapi", extra = ["standard"] },
     { name = "furo" },
     { name = "greenlet" },
@@ -1417,7 +1399,6 @@ requires-dist = [
     { name = "asyncpg", specifier = ">=0.29.0" },
     { name = "black", specifier = ">=25.1.0" },
     { name = "deepeval", specifier = ">=1.2.16" },
-    { name = "elevenlabs", specifier = ">=1.1.0" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.115.12" },
     { name = "furo", specifier = ">=2024.1.29" },
     { name = "greenlet", specifier = ">=3.0.0" },
