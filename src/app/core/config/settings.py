@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: Optional[str] = None
     GEMINI_API_KEY: Optional[str] = None
     GROQ_API_KEY: Optional[str] = None
-    ELEVEN_LABS_API_KEY: Optional[str] = None
+    # ELEVEN_LABS_API_KEY: Optional[str] = None  # Replaced with Groq TTS
 
     # RAG Configuration
     KNOWLEDGE_BASE_PATH: str = "./knowledge_base"

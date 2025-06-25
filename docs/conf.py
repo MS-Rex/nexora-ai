@@ -80,7 +80,7 @@ autodoc_mock_imports = [
     'asyncpg',
     'uvicorn',
     'openai',
-    'elevenlabs',
+
     'pydub',
     'numpy',
     'torch',

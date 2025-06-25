@@ -21,7 +21,6 @@ dependencies = [
     "websockets>=13.0.1",
     "openai>=1.0.0",
     "groq>=0.15.0",
-    "elevenlabs>=1.1.0",
     "pydub>=0.25.1",
     # RAG Dependencies
     "lancedb>=0.17.0",

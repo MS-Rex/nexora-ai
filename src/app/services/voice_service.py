@@ -2,8 +2,8 @@
 Voice service for handling speech-to-text, AI response generation, and text-to-speech.
 
 This module provides comprehensive voice interaction functionality using Groq API 
-(Whisper-large-v3-turbo) for speech recognition, orchestrator agent for response 
-generation, and ElevenLabs for text-to-speech synthesis.
+for both speech recognition (Whisper-large-v3-turbo) and text-to-speech (PlayAI Dialog),
+along with orchestrator agent for response generation.
 """
 
 import asyncio
@@ -13,11 +13,9 @@ import os
 import re
 import tempfile
 import traceback
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List, Dict
 
 from groq import Groq
-from elevenlabs import VoiceSettings
-from elevenlabs.client import ElevenLabs
 from pydub import AudioSegment
 
 from src.app.agents.orchestrator_agent import orchestrator_agent
@@ -35,32 +33,19 @@ class VoiceService:
         self.groq_client = None
         self.orchestrator_agent = orchestrator_agent
         self.settings = get_settings()
-        self.elevenlabs_client = None
         self._load_models()
 
     def _load_models(self):
-        """Initialize Groq client, orchestrator agent, and setup ElevenLabs client"""
+        """Initialize Groq client for both STT and TTS, and orchestrator agent"""
         try:
-            # Initialize Groq client for speech-to-text
+            # Initialize Groq client for speech-to-text and text-to-speech
             if self.settings.GROQ_API_KEY:
                 logger.info("Initializing Groq client...")
                 self.groq_client = Groq(api_key=self.settings.GROQ_API_KEY)
-                logger.info("✅ Groq client initialized successfully")
+                logger.info("✅ Groq client initialized successfully for STT and TTS")
             else:
                 logger.warning(
                     "❌ GROQ_API_KEY not found in environment variables"
-                )
-
-            # Initialize ElevenLabs client
-            if self.settings.ELEVEN_LABS_API_KEY:
-                logger.info("Initializing ElevenLabs client...")
-                self.elevenlabs_client = ElevenLabs(
-                    api_key=self.settings.ELEVEN_LABS_API_KEY
-                )
-                logger.info("✅ ElevenLabs client initialized successfully")
-            else:
-                logger.warning(
-                    "❌ ELEVEN_LABS_API_KEY not found in environment variables"
                 )
 
             # Check if orchestrator agent is available
@@ -72,36 +57,51 @@ class VoiceService:
         except Exception as e:
             logger.error("❌ Error loading models: %s", e)
 
-    async def get_available_voices(self) -> list:
+    async def get_available_voices(self) -> List[Dict[str, str]]:
         """
-        Get available voices from ElevenLabs
+        Get available voices for Groq PlayAI TTS
 
         Returns:
-            List of available voices
+            List of available voices with their details
         """
         try:
-            if not self.elevenlabs_client:
-                logger.error("❌ ElevenLabs client not initialized")
-                return []
+            # Groq PlayAI TTS supported voices
+            # English voices for playai-tts model
+            english_voices = [
+                {"voice_id": "Arista-PlayAI", "name": "Arista", "description": "Conversational and warm", "language": "English"},
+                {"voice_id": "Atlas-PlayAI", "name": "Atlas", "description": "Strong and confident", "language": "English"},
+                {"voice_id": "Basil-PlayAI", "name": "Basil", "description": "Gentle and soothing", "language": "English"},
+                {"voice_id": "Briggs-PlayAI", "name": "Briggs", "description": "Professional and clear", "language": "English"},
+                {"voice_id": "Calum-PlayAI", "name": "Calum", "description": "Friendly and approachable", "language": "English"},
+                {"voice_id": "Celeste-PlayAI", "name": "Celeste", "description": "Elegant and sophisticated", "language": "English"},
+                {"voice_id": "Cheyenne-PlayAI", "name": "Cheyenne", "description": "Energetic and vibrant", "language": "English"},
+                {"voice_id": "Chip-PlayAI", "name": "Chip", "description": "Cheerful and upbeat", "language": "English"},
+                {"voice_id": "Cillian-PlayAI", "name": "Cillian", "description": "Smooth and articulate", "language": "English"},
+                {"voice_id": "Deedee-PlayAI", "name": "Deedee", "description": "Animated and expressive", "language": "English"},
+                {"voice_id": "Fritz-PlayAI", "name": "Fritz", "description": "Reliable and steady", "language": "English"},
+                {"voice_id": "Gail-PlayAI", "name": "Gail", "description": "Warm and caring", "language": "English"},
+                {"voice_id": "Indigo-PlayAI", "name": "Indigo", "description": "Creative and unique", "language": "English"},
+                {"voice_id": "Mamaw-PlayAI", "name": "Mamaw", "description": "Wise and nurturing", "language": "English"},
+                {"voice_id": "Mason-PlayAI", "name": "Mason", "description": "Strong and dependable", "language": "English"},
+                {"voice_id": "Mikail-PlayAI", "name": "Mikail", "description": "Intelligent and thoughtful", "language": "English"},
+                {"voice_id": "Mitch-PlayAI", "name": "Mitch", "description": "Casual and relaxed", "language": "English"},
+                {"voice_id": "Quinn-PlayAI", "name": "Quinn", "description": "Modern and crisp", "language": "English"},
+                {"voice_id": "Thunder-PlayAI", "name": "Thunder", "description": "Powerful and commanding", "language": "English"},
+            ]
 
-            loop = asyncio.get_event_loop()
-            voices = await loop.run_in_executor(
-                None, self.elevenlabs_client.voices.search
-            )
+            # Arabic voices for playai-tts-arabic model
+            arabic_voices = [
+                {"voice_id": "Ahmad-PlayAI", "name": "Ahmad", "description": "Professional Arabic male voice", "language": "Arabic"},
+                {"voice_id": "Amira-PlayAI", "name": "Amira", "description": "Elegant Arabic female voice", "language": "Arabic"},
+                {"voice_id": "Khalid-PlayAI", "name": "Khalid", "description": "Confident Arabic male voice", "language": "Arabic"},
+                {"voice_id": "Nasser-PlayAI", "name": "Nasser", "description": "Authoritative Arabic male voice", "language": "Arabic"},
+            ]
 
-            voice_list = []
-            for voice in voices.voices:
-                voice_list.append(
-                    {
-                        "voice_id": voice.voice_id,
-                        "name": voice.name,
-                        "description": getattr(voice, "description", "No description"),
-                        "category": getattr(voice, "category", "Unknown"),
-                    }
-                )
+            all_voices = english_voices + arabic_voices
 
-            logger.info("✅ Found %d available voices", len(voice_list))
-            return voice_list
+            logger.info("✅ Found %d available voices (%d English, %d Arabic)", 
+                       len(all_voices), len(english_voices), len(arabic_voices))
+            return all_voices
 
         except Exception as e:
             logger.error("❌ Error fetching voices: %s", e)
@@ -238,8 +238,6 @@ class VoiceService:
         except Exception as cleanup_error:
             logger.warning("⚠️  Error cleaning up temp files: %s", cleanup_error)
 
-
-
     async def generate_response(self, text: str, user_id: Optional[str] = None) -> str:
         """
         Generate AI response using OrchestratorAgent
@@ -272,55 +270,60 @@ class VoiceService:
             return "Sorry, I encountered an error while generating a response."
 
     async def text_to_speech(
-        self, text: str, voice_id: str = "EXAVITQu4vr4xnSDxMaL"
+        self, text: str, voice_id: str = "Fritz-PlayAI"
     ) -> bytes:
         """
-        Convert text to speech using ElevenLabs
+        Convert text to speech using Groq PlayAI TTS
 
         Args:
             text: Text to convert to speech
-            voice_id: ElevenLabs voice ID (default: Bella - a pleasant female voice)
+            voice_id: PlayAI voice ID (default: Fritz-PlayAI - a reliable and steady voice)
 
         Returns:
-            Audio bytes in MP3 format
+            Audio bytes in WAV format
         """
         try:
-            if not self.elevenlabs_client:
-                logger.error("❌ ElevenLabs client not initialized")
+            if not self.groq_client:
+                logger.error("❌ Groq client not initialized")
                 return b""
 
             # Clean the text for better speech synthesis
             cleaned_text = self._clean_markdown_for_speech(text)
 
-            logger.info("🔊 Converting text to speech: '%s'", cleaned_text[:100])
+            logger.info("🔊 Converting text to speech: '%s' with voice '%s'", 
+                       cleaned_text[:100], voice_id)
 
-            # Configure voice settings for natural speech
-            voice_settings = VoiceSettings(
-                stability=0.71, similarity_boost=0.75, style=0.0, use_speaker_boost=True
-            )
+            # Determine model based on voice
+            model = "playai-tts-arabic" if voice_id.endswith("-PlayAI") and voice_id.startswith(("Ahmad", "Amira", "Khalid", "Nasser")) else "playai-tts"
 
-            # Generate audio
+            # Generate audio using Groq PlayAI TTS
             loop = asyncio.get_event_loop()
-            audio_generator = await loop.run_in_executor(
+            response = await loop.run_in_executor(
                 None,
-                lambda: self.elevenlabs_client.text_to_speech.convert(
-                    text=cleaned_text,
-                    voice_id=voice_id,
-                    voice_settings=voice_settings,
-                    model_id="eleven_multilingual_v2",
+                lambda: self.groq_client.audio.speech.create(
+                    model=model,
+                    input=cleaned_text,
+                    voice=voice_id,
+                    response_format="wav"
                 ),
             )
 
-            # Convert generator to bytes
+            # Get audio bytes from response
             audio_bytes = b""
-            for chunk in audio_generator:
-                audio_bytes += chunk
+            if hasattr(response, 'content'):
+                audio_bytes = response.content
+            elif hasattr(response, 'read'):
+                audio_bytes = response.read()
+            else:
+                # If response is iterable (streaming), collect all chunks
+                for chunk in response:
+                    audio_bytes += chunk
 
-            logger.info("✅ Successfully generated %d bytes of audio", len(audio_bytes))
+            logger.info("✅ Successfully generated %d bytes of audio using Groq TTS", len(audio_bytes))
             return audio_bytes
 
         except Exception as e:
-            logger.error("❌ Error converting text to speech: %s", e)
+            logger.error("❌ Error converting text to speech with Groq: %s", e)
             logger.error("Full traceback: %s", traceback.format_exc())
             return b""
 
@@ -400,10 +403,14 @@ class VoiceService:
         # Ensure proper sentence endings
         text = re.sub(r"([.!?])\s*([A-Z])", r"\1 \2", text)
 
+        # Limit text length for TTS (Groq has 10K character limit)
+        if len(text) > 10000:
+            text = text[:9997] + "..."
+
         return text.strip()
 
     async def process_voice_message(
-        self, audio_data: bytes, user_id: Optional[str] = None
+        self, audio_data: bytes, user_id: Optional[str] = None, voice_id: str = "Fritz-PlayAI"
     ) -> Tuple[str, bytes]:
         """
         Process a complete voice message: transcribe -> generate response -> synthesize
@@ -411,6 +418,7 @@ class VoiceService:
         Args:
             audio_data: Raw audio bytes from user
             user_id: Optional user ID for context
+            voice_id: Voice to use for response synthesis
 
         Returns:
             Tuple of (transcribed_text, response_audio_bytes)
@@ -436,8 +444,8 @@ class VoiceService:
 
             logger.info("🤖 Generated response: %s", response_text[:100])
 
-            # Step 3: Convert response to speech
-            response_audio = await self.text_to_speech(response_text)
+            # Step 3: Convert response to speech using Groq TTS
+            response_audio = await self.text_to_speech(response_text, voice_id)
 
             if not response_audio:
                 logger.warning("⚠️  No audio generated")
